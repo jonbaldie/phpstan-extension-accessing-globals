@@ -47,7 +47,7 @@ class NeverModifySuperGlobalsInNestedScopeRule extends
             return [
                 RuleErrorBuilder::message(
                     sprintf(
-                        'Code is modifying superglobal variable $%s in a nested scope. Use a wrapper service instead.',
+                        'Code is modifying superglobal variable $%s in a nested scope. Return the new value instead.',
                         $var->name,
                     ),
                 )

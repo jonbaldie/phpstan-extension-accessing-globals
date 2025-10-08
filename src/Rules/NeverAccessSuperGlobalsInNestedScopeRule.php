@@ -36,7 +36,7 @@ class NeverAccessSuperGlobalsInNestedScopeRule extends
             return [
                 RuleErrorBuilder::message(
                     sprintf(
-                        'Code is accessing superglobal variable $%s in a nested scope. Use a wrapper service instead.',
+                        'Code is accessing superglobal variable $%s in a nested scope. Pass the value as an argument instead.',
                         $node->name,
                     ),
                 )

@@ -24,39 +24,39 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
             [__DIR__ . "/Data/modify-superglobals.php"],
             [
                 [
-                    'Code is modifying superglobal variable $_GET. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
                     5,
                 ],
                 [
-                    'Code is modifying superglobal variable $_POST. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_POST. Return the new value instead.',
                     6,
                 ],
                 [
-                    'Code is modifying superglobal variable $_REQUEST. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_REQUEST. Return the new value instead.',
                     7,
                 ],
                 [
-                    'Code is modifying superglobal variable $_SESSION. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
                     8,
                 ],
                 [
-                    'Code is modifying superglobal variable $_COOKIE. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_COOKIE. Return the new value instead.',
                     9,
                 ],
                 [
-                    'Code is modifying superglobal variable $_FILES. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_FILES. Return the new value instead.',
                     10,
                 ],
                 [
-                    'Code is modifying superglobal variable $_ENV. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_ENV. Return the new value instead.',
                     11,
                 ],
                 [
-                    'Code is modifying superglobal variable $_SERVER. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $_SERVER. Return the new value instead.',
                     12,
                 ],
                 [
-                    'Code is modifying superglobal variable $GLOBALS. Use a wrapper service instead.',
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
                     13,
                 ],
             ],

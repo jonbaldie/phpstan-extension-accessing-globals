@@ -24,7 +24,7 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             [__DIR__ . "/Data/modify-globals.php"],
             [
                 [
-                    'Code is modifying global variable $db. Use dependency injection instead.',
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
                     11,
                 ],
             ],

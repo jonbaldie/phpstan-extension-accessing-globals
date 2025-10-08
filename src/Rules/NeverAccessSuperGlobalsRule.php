@@ -47,7 +47,7 @@ class NeverAccessSuperGlobalsRule implements Rule
             return [
                 RuleErrorBuilder::message(
                     sprintf(
-                        'Code is accessing superglobal variable $%s. Use a wrapper service instead.',
+                        'Code is accessing superglobal variable $%s. Pass the value as an argument instead.',
                         $node->name,
                     ),
                 )

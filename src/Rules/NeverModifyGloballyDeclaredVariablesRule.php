@@ -129,7 +129,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     ) {
                         $this->errors[] = RuleErrorBuilder::message(
                             sprintf(
-                                'Code is modifying global variable $%s. Use dependency injection instead.',
+                                'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
                                 $assignedTo->name,
                             ),
                         )

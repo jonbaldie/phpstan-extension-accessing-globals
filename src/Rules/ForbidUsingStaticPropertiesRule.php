@@ -37,7 +37,7 @@ class ForbidUsingStaticPropertiesRule implements Rule
         return [
             RuleErrorBuilder::message(
                 sprintf(
-                    'Code is accessing static property %s::$%s. Static properties are a form of global state; inject this dependency instead.',
+                    'Code is accessing static property %s::$%s. Static properties are global state; pass the value as an argument instead.',
                     $className,
                     $propertyName
                 )

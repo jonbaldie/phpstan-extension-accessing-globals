@@ -15,7 +15,3 @@ services:
         class: AccessingGlobals\Rules\ForbidImpureGlobalFunctionsRule
         tags:
             - phpstan.rules.rule
-    -
-        class: AccessingGlobals\Rules\EnforceImmutableObjectUpdatesRule
-        tags:
-            - phpstan.rules.rule

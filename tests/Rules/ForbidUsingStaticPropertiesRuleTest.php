@@ -24,11 +24,11 @@ class ForbidUsingStaticPropertiesRuleTest extends RuleTestCase
             [__DIR__ . "/Data/using-static-properties.php"],
             [
                 [
-                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Config::$value. Static properties are a form of global state; inject this dependency instead.',
+                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Config::$value. Static properties are global state; pass the value as an argument instead.',
                     16,
                 ],
                 [
-                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Config::$value. Static properties are a form of global state; inject this dependency instead.',
+                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Config::$value. Static properties are global state; pass the value as an argument instead.',
                     26,
                 ],
             ],

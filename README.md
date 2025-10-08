@@ -21,7 +21,6 @@ The extension also includes a more "opinionated" set of rules for teams that wan
 -   **`ForbidUsingStaticProperties`**: Prevents access to static properties, which are a form of global state.
 -   **`ForbidUsingClassConstants`**: Prevents a function from accessing a constant on another class, enforcing that the value should be passed in.
 -   **`ForbidImpureGlobalFunctions`**: Flags calls to impure global functions like `time()`, `getenv()`, or `rand()` that produce side effects or rely on hidden external state.
--   **`EnforceImmutableObjectUpdates`**: Flags "fire-and-forget" method calls on passed-in objects, encouraging a pattern of returning new, updated objects instead of mutating them.
 
 ## Installation
 
@@ -85,7 +84,6 @@ This enables the following rules:
 - `ForbidUsingStaticProperties`
 - `ForbidUsingClassConstants`
 - `ForbidImpureGlobalFunctions`
-- `EnforceImmutableObjectUpdates`
 
 ### Custom Configuration
 

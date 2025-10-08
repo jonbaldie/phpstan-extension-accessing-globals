@@ -58,7 +58,7 @@ class NeverModifySuperGlobalsRule implements Rule
             return [
                 RuleErrorBuilder::message(
                     sprintf(
-                        'Code is modifying superglobal variable $%s. Use a wrapper service instead.',
+                        'Code is modifying superglobal variable $%s. Return the new value instead.',
                         $var->name,
                     ),
                 )
