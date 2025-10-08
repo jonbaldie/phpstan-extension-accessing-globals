@@ -19,6 +19,11 @@
       "AccessingGlobals\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "AccessingGlobals\\Tests\\": "tests/"
+    }
+  },
   "extra": {
     "phpstan": {
       "includes": [

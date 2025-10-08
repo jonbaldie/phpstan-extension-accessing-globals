@@ -15,6 +15,14 @@ This extension provides a set of rules to enforce restrictions on accessing and 
 -   **`neverAccessSuperGlobalsInNestedScope`**: A weaker version of `neverAccessSuperGlobals` that allows accessing superglobals in the root scope (e.g., in an `index.php` file) but not within functions, methods, or closures.
 -   **`neverModifySuperGlobalsInNestedScope`**: A weaker version of `neverModifySuperGlobals` that allows modifying superglobals in the root scope.
 
+The extension also includes a more "opinionated" set of rules for teams that want to enforce a stricter, more functional style of programming:
+
+-   **`ForbidUsingGlobalConstants`**: Prevents functions from accessing global constants (`define()` or `const`), forcing them to be passed as arguments.
+-   **`ForbidUsingStaticProperties`**: Prevents access to static properties, which are a form of global state.
+-   **`ForbidUsingClassConstants`**: Prevents a function from accessing a constant on another class, enforcing that the value should be passed in.
+-   **`ForbidImpureGlobalFunctions`**: Flags calls to impure global functions like `time()`, `getenv()`, or `rand()` that produce side effects or rely on hidden external state.
+-   **`EnforceImmutableObjectUpdates`**: Flags "fire-and-forget" method calls on passed-in objects, encouraging a pattern of returning new, updated objects instead of mutating them.
+
 ## Installation
 
 You can install this extension via [Composer](https://getcomposer.org/):
@@ -25,7 +33,7 @@ composer require --dev jonbaldie/phpstan-extension-accessing-globals
 
 ## Usage
 
-This extension comes with two pre-defined rule sets.
+This extension comes with three pre-defined rule sets.
 
 ### Default (Pragmatic) Rules
 
@@ -60,6 +68,24 @@ This enables the following rules:
 - `neverModifyGlobals`
 - `neverAccessSuperGlobals`
 - `neverModifySuperGlobals`
+
+### Opinionated Rules
+
+This is the strictest rule set, designed for projects that want to enforce a purely functional style where all dependencies are explicit. It helps eliminate hidden dependencies, side effects, and mutations.
+
+To enable the opinionated rules, include `rules-opinionated.neon`:
+
+```neon
+includes:
+    - vendor/jonbaldie/phpstan-extension-accessing-globals/config/rules-opinionated.neon
+```
+
+This enables the following rules:
+- `ForbidUsingGlobalConstants`
+- `ForbidUsingStaticProperties`
+- `ForbidUsingClassConstants`
+- `ForbidImpureGlobalFunctions`
+- `EnforceImmutableObjectUpdates`
 
 ### Custom Configuration
 

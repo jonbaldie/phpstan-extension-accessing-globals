@@ -1,0 +1,21 @@
+services:
+    -
+        class: AccessingGlobals\Rules\ForbidUsingGlobalConstantsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\ForbidUsingStaticPropertiesRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\ForbidUsingClassConstantsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\ForbidImpureGlobalFunctionsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\EnforceImmutableObjectUpdatesRule
+        tags:
+            - phpstan.rules.rule
