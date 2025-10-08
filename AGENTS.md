@@ -69,62 +69,146 @@ vendor/bin/phpunit
 
 ### Manual Verification Commands
 
-**IMPORTANT: These commands are expected to FAIL with specific errors.** This is the correct behavior!
+**⚠️ CRITICAL: All commands below are EXPECTED TO FAIL (exit code 1).** 
 
-The test data files in `tests/Rules/Data/` contain deliberately bad code. Running PHPStan on them verifies that our rules correctly detect and report violations.
+**This is CORRECT behavior!** ✅
+
+The test files contain deliberately bad code. When PHPStan detects violations and exits with code 1, it proves the rules are working correctly.
+
+---
+
+#### Understanding Test Results
+
+✅ **SUCCESS = Exit Code 1 + Error Messages**
+- Command exits with code 1
+- Shows "[ERROR] Found X errors"
+- Lists specific violations with identifiers (e.g., `🪪 access.global`)
+
+❌ **FAILURE = Exit Code 0 (No Errors)**
+- Command exits with code 0
+- Shows "No errors found"
+- This means the rule is BROKEN and not detecting violations
+
+---
 
 #### Basic Rules (config/rules.neon)
 
-These should each fail with errors showing the rules are detecting violations:
+**Expected:** Each command should exit with code 1 and show the specified number of errors.
 
 ```bash
-# SHOULD FAIL: Detecting global variable access
+# Expected: 3 errors (accessing global variables $foo, $bar, $baz)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/access-globals.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting global variable modification
+# Expected: 4 errors (accessing $db via global keyword, modifying via $GLOBALS)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-globals.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting superglobal access in nested scopes
+# Expected: 9 errors (accessing all superglobals in nested scopes)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/access-superglobals-in-nested-scope.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting superglobal modification in nested scopes
+# Expected: 19 errors (modifying all superglobals in nested scopes)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-superglobals-in-nested-scope.php --level=0 --no-progress
 ```
 
+<details>
+<summary>Example successful output (click to expand)</summary>
+
+```
+------ ------------------------------------------------------------------
+  Line   access-globals.php                                          
+ ------ ------------------------------------------------------------------
+  5      Code is accessing global variable $foo. Use dependency injection
+         instead.                                                    
+         🪪  access.global                                           
+  10     Code is accessing global variable $bar. Use dependency injection
+         instead.                                                    
+         🪪  access.global                                           
+  10     Code is accessing global variable $baz. Use dependency injection
+         instead.                                                    
+         🪪  access.global                                           
+ ------ ------------------------------------------------------------------
+
+ [ERROR] Found 3 errors
+```
+</details>
+
+---
+
 #### Strict Rules (config/rules-strict.neon)
 
-These should each fail with errors showing stricter superglobal detection:
+**Expected:** Each command should exit with code 1 and show the specified number of errors.
 
 ```bash
-# SHOULD FAIL: Detecting ANY superglobal access
+# Expected: 9 errors (accessing any superglobal, even in root scope)
 vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/access-superglobals.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting ANY superglobal modification
+# Expected: 19 errors (modifying any superglobal, even in root scope)
 vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/modify-superglobals.php --level=0 --no-progress
 ```
 
+<details>
+<summary>Example successful output (click to expand)</summary>
+
+```
+------ -----------------------------------------------------------------------
+  Line   access-superglobals.php                                     
+ ------ -----------------------------------------------------------------------
+  5      Code is accessing superglobal variable $_GET. Use a wrapper service
+         instead.                                                    
+         🪪  access.superglobal                                      
+  6      Code is accessing superglobal variable $_POST. Use a wrapper service
+         instead.                                                    
+         🪪  access.superglobal                                      
+ ------ -----------------------------------------------------------------------
+
+ [ERROR] Found 9 errors
+```
+</details>
+
+---
+
 #### Opinionated Rules (config/rules-opinionated.neon)
 
-These should each fail with errors showing the stricter functional programming rules:
+**Expected:** Each command should exit with code 1 and show the specified number of errors.
 
 ```bash
-# SHOULD FAIL: Detecting global constant access
+# Expected: 3 errors (accessing global constants MY_CONSTANT, ANOTHER_CONSTANT)
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/using-global-constants.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting static property access
+# Expected: 2 errors (accessing static property Config::$value)
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/using-static-properties.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting external class constant access
+# Expected: 2 errors (accessing constants from external classes)
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/using-class-constants.php --level=0 --no-progress
 
-# SHOULD FAIL: Detecting impure function calls
+# Expected: 4 errors (calling time(), rand(), getenv(), file_get_contents())
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/using-impure-functions.php --level=0 --no-progress
 ```
+
+<details>
+<summary>Example successful output (click to expand)</summary>
+
+```
+------ -----------------------------------------------------------------------
+  Line   using-impure-functions.php                                  
+ ------ -----------------------------------------------------------------------
+  12     Code is calling the impure function "time()". This creates a hidden
+         dependency on external state; pass the result as an argument instead.
+         🪪  function.impure                                         
+  13     Code is calling the impure function "rand()". This creates a hidden
+         dependency on external state; pass the result as an argument instead.
+         🪪  function.impure                                         
+ ------ -----------------------------------------------------------------------
+
+ [ERROR] Found 4 errors
+```
+</details>
+
+---
 
 #### Quick Verification (All at Once)
 
 ```bash
-# Test all basic rules together - SHOULD FAIL with multiple errors
+# Expected: 34 errors total across all basic rule violations
 vendor/bin/phpstan analyze -c config/rules.neon \
   tests/Rules/Data/access-globals.php \
   tests/Rules/Data/modify-globals.php \
@@ -132,13 +216,13 @@ vendor/bin/phpstan analyze -c config/rules.neon \
   tests/Rules/Data/modify-superglobals-in-nested-scope.php \
   --level=0 --no-progress
 
-# Test all strict rules together - SHOULD FAIL with multiple errors
+# Expected: 28 errors total across all strict rule violations
 vendor/bin/phpstan analyze -c config/rules-strict.neon \
   tests/Rules/Data/access-superglobals.php \
   tests/Rules/Data/modify-superglobals.php \
   --level=0 --no-progress
 
-# Test all opinionated rules together - SHOULD FAIL with multiple errors
+# Expected: 13 errors total across all opinionated rule violations
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon \
   tests/Rules/Data/using-global-constants.php \
   tests/Rules/Data/using-static-properties.php \
@@ -147,4 +231,16 @@ vendor/bin/phpstan analyze -c config/rules-opinionated.neon \
   --level=0 --no-progress
 ```
 
-**Expected Result:** Each command exits with code 1 and displays specific error messages showing which violations were detected. If a command exits with code 0 (success), that means the rule is NOT working correctly.
+---
+
+#### Troubleshooting
+
+**If you see exit code 0 (no errors):**
+- ❌ The rule is broken
+- Check if the rule is properly registered in the config file
+- Verify the rule implementation
+
+**If you see different error counts:**
+- ❌ The rule may have a bug or the test file was modified
+- Compare actual output with expected counts above
+- Run `vendor/bin/phpunit` to verify unit tests still pass

@@ -2,5 +2,11 @@
 
 function test()
 {
-    $GLOBALS['foo'] = 'bar';
+    $GLOBALS["foo"] = "bar";
+}
+
+function testGlobalModification()
+{
+    global $db;
+    $db = new stdClass();
 }
