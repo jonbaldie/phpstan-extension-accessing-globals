@@ -21,7 +21,7 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/modify-superglobals-in-nested-scope.php"],
+            [__DIR__ . "/Data/modify-superglobals-in-nested-scope.php"],
             [
                 [
                     'Code is modifying superglobal variable $_GET in a nested scope. Use a wrapper service instead.',

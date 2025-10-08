@@ -21,7 +21,7 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/using-class-constants.php"],
+            [__DIR__ . "/Data/using-class-constants.php"],
             [
                 [
                     "Code is accessing constant AccessingGlobals\Tests\Rules\Data\AnotherConfig::RETRIES. This creates a hidden dependency; pass the value as an argument instead.",

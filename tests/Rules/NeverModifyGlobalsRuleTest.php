@@ -21,7 +21,7 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/modify-globals.php"],
+            [__DIR__ . "/Data/modify-globals.php"],
             [
                 [
                     'Code is modifying global variable through $GLOBALS[\'foo\']. Use dependency injection instead.',

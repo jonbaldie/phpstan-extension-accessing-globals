@@ -21,7 +21,7 @@ class NeverAccessGlobalsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/access-globals.php"],
+            [__DIR__ . "/Data/access-globals.php"],
             [
                 [
                     'Code is accessing global variable $foo. Use dependency injection instead.',

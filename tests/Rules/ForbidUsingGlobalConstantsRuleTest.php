@@ -21,7 +21,7 @@ class ForbidUsingGlobalConstantsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/using-global-constants.php"],
+            [__DIR__ . "/Data/using-global-constants.php"],
             [
                 [
                     'Code is accessing global constant "MY_CONSTANT". Pass it as an argument instead to make the dependency explicit.',

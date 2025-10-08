@@ -21,7 +21,7 @@ class NeverAccessSuperGlobalsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/access-superglobals.php"],
+            [__DIR__ . "/Data/access-superglobals.php"],
             [
                 [
                     'Code is accessing superglobal variable $_GET. Use a wrapper service instead.',

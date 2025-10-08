@@ -21,7 +21,7 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/modify-superglobals.php"],
+            [__DIR__ . "/Data/modify-superglobals.php"],
             [
                 [
                     'Code is modifying superglobal variable $_GET. Use a wrapper service instead.',

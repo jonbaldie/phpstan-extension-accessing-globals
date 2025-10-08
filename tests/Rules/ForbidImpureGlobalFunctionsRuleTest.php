@@ -21,7 +21,7 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . "/data/using-impure-functions.php"],
+            [__DIR__ . "/Data/using-impure-functions.php"],
             [
                 [
                     'Code is calling the impure function "time()". This creates a hidden dependency on external state; pass the result as an argument instead.',
