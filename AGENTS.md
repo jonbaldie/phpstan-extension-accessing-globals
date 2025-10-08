@@ -99,7 +99,7 @@ The test files contain deliberately bad code. When PHPStan detects violations an
 # Expected: 3 errors (accessing global variables $foo, $bar, $baz)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/access-globals.php --level=0 --no-progress
 
-# Expected: 4 errors (accessing $db via global keyword, modifying via $GLOBALS)
+# Expected: 5 errors (accessing $db via global keyword, modifying $db, modifying via $GLOBALS)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-globals.php --level=0 --no-progress
 
 # Expected: 9 errors (accessing all superglobals in nested scopes)
@@ -208,7 +208,7 @@ vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/usi
 #### Quick Verification (All at Once)
 
 ```bash
-# Expected: 34 errors total across all basic rule violations
+# Expected: 36 errors total across all basic rule violations
 vendor/bin/phpstan analyze -c config/rules.neon \
   tests/Rules/Data/access-globals.php \
   tests/Rules/Data/modify-globals.php \
