@@ -1,0 +1,25 @@
+services:
+    -
+        class: AccessingGlobals\Rules\NeverAccessGlobalsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\NeverModifyGlobalsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\NeverAccessSuperGlobalsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\NeverModifySuperGlobalsRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\NeverAccessSuperGlobalsInNestedScopeRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: AccessingGlobals\Rules\NeverModifySuperGlobalsInNestedScopeRule
+        tags:
+            - phpstan.rules.rule

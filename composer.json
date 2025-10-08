@@ -1,0 +1,29 @@
+{
+  "name": "jonbaldie/phpstan-extension-accessing-globals",
+  "description": "PHPStan extension for detecting code that accesses or modifies globally shared data, a common source of bugs.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jonathan Baldie",
+      "email": "jon@jonbaldie.com"
+    }
+  ],
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-phpunit": "^2.0",
+    "phpunit/phpunit": "^12.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AccessingGlobals\\": "src/"
+    }
+  },
+  "extra": {
+    "phpstan": {
+      "includes": [
+        "config/rules.neon"
+      ]
+    }
+  }
+}
