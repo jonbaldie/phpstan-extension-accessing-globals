@@ -25,14 +25,45 @@ composer require --dev jonbaldie/phpstan-extension-accessing-globals
 
 ## Usage
 
-To enable the rules, include the `rules.neon` file in your project's `phpstan.neon` configuration:
+This extension comes with two pre-defined rule sets.
+
+### Default (Pragmatic) Rules
+
+This is the recommended configuration for most projects. It prevents the use of the `global` keyword and modification of `$GLOBALS`, while allowing superglobals to be accessed and modified in the root scope (e.g., in your `index.php` file).
+
+To enable the default rules, include `rules.neon` in your project's `phpstan.neon` configuration:
 
 ```neon
 includes:
     - vendor/jonbaldie/phpstan-extension-accessing-globals/config/rules.neon
 ```
 
-By default, all rules are enabled. If you only want to enable specific rules, you can copy the ones you need from the extension's `config/rules.neon` file into your project's `phpstan.neon`.
+This enables the following rules:
+- `neverAccessGlobals`
+- `neverModifyGlobals`
+- `neverAccessSuperGlobalsInNestedScope`
+- `neverModifySuperGlobalsInNestedScope`
+
+### Strict Rules
+
+This configuration is for projects that want to enforce the highest level of strictness. It completely forbids any interaction with global or superglobal variables anywhere in your codebase.
+
+To enable the strict rules, include `rules-strict.neon` instead:
+
+```neon
+includes:
+    - vendor/jonbaldie/phpstan-extension-accessing-globals/config/rules-strict.neon
+```
+
+This enables the following rules:
+- `neverAccessGlobals`
+- `neverModifyGlobals`
+- `neverAccessSuperGlobals`
+- `neverModifySuperGlobals`
+
+### Custom Configuration
+
+If you want to enable only a specific set of rules, you can copy the ones you need from the extension's `config` directory into your own `phpstan.neon` file.
 
 ## Example
 
