@@ -243,3 +243,23 @@ vendor/bin/phpstan analyze -c config/rules-opinionated.neon \
 - ❌ The rule may have a bug or the test file was modified
 - Compare actual output with expected counts above
 - Run `vendor/bin/phpunit` to verify unit tests still pass
+
+---
+
+### CI Workflow Testing
+
+The GitHub Actions CI workflow (`.github/workflows/ci.yml`) runs the test suite using specific Docker images to ensure consistent testing environments across PHP 8.3 and 8.4.
+
+You can test locally using the same Docker images that CI uses:
+
+**PHP 8.4:**
+```bash
+docker run --rm -v "$(pwd):/app" -w /app thecodingmachine/php:8.4-v5-slim-cli bash -c "composer install --prefer-dist --no-progress --no-interaction && vendor/bin/phpunit"
+```
+
+**PHP 8.3:**
+```bash
+docker run --rm -v "$(pwd):/app" -w /app thecodingmachine/php:8.3-v5-slim-cli bash -c "composer install --prefer-dist --no-progress --no-interaction && vendor/bin/phpunit"
+```
+
+These commands match exactly what the CI workflow runs, allowing you to verify changes locally before pushing to GitHub.
