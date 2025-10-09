@@ -46,10 +46,13 @@ includes:
 ```
 
 This enables the following rules:
-- `neverAccessGlobals`
-- `neverModifyGlobals`
-- `neverAccessSuperGlobalsInNestedScope`
-- `neverModifySuperGlobalsInNestedScope`
+- `neverAccessGlobals` - Detects use of the `global` keyword
+- `neverModifyGlobals` - Detects modifications via `$GLOBALS['key']`
+- `neverModifyGloballyDeclaredVariables` - Detects modifications to variables declared with `global`
+- `neverAccessSuperGlobalsInNestedScope` - Allows superglobals in root scope only (accessing)
+- `neverModifySuperGlobalsInNestedScope` - Allows superglobals in root scope only (modifying)
+
+**Note:** A single line of code may trigger multiple rules. For example, `global $db; $db = new PDO(...)` will report both accessing the global variable AND modifying it, since these represent distinct problems that need different refactoring approaches.
 
 ### Strict Rules
 
@@ -85,44 +88,150 @@ This enables the following rules:
 - `ForbidUsingClassConstants`
 - `ForbidImpureGlobalFunctions`
 
+### Working with Legacy Code
+
+If you're applying this extension to an existing codebase with heavy global variable usage, here's what to expect:
+
+**Error Volume:** A 3,000-line legacy script might have 50-100+ errors from the default rules. This is expected and represents real technical debt.
+
+**Recommended Approach:**
+1. **Start with the default rules** (`rules.neon`) - they're pragmatic and focus on the most problematic patterns
+2. **Focus on `global` keyword usage first** - this reveals which functions share hidden state with each other
+3. **Tackle superglobal usage in functions next** - superglobals at the top-level (e.g., in `index.php`) are allowed, but inside functions they create hidden dependencies
+4. **Skip the opinionated rules initially** - they'll flag hundreds of issues like `time()`, `rand()`, and `define()` usage that aren't the critical problems
+
+**What each rule catches:**
+- `neverAccessGlobals` + `neverModifyGlobals` → Functions using `global $x` or `$GLOBALS['x']` (the worst offenders)
+- `neverModifyGloballyDeclaredVariables` → Assignments to variables after declaring them with `global`
+- Superglobal rules → `$_GET`, `$_POST`, `$_SESSION` usage inside functions (root scope access is allowed)
+
+The goal is to make dependencies explicit through function parameters and return values.
+
 ### Custom Configuration
 
 If you want to enable only a specific set of rules, you can copy the ones you need from the extension's `config` directory into your own `phpstan.neon` file.
 
-## Example
+## Examples
 
-This extension is designed to catch code like the following:
+This extension is designed to catch problematic patterns in your code. Here's what each rule detects:
+
+### Default Rules (`rules.neon`)
 
 ```php
 <?php
 
+// Root-level variables that will be accessed globally
 $db = null;
-$config = [
-    'database' => [
-        'host' => 'localhost',
-        'username' => 'root',
-        'password' => '',
-        'database' => 'my_database'
-    ]
-];
+$config = ['host' => 'localhost'];
 
-function initializeApp(): void {
-    // BAD: Fails `neverAccessGlobals`
-    global $db, $config;
+// ❌ BAD: neverAccessGlobals
+function connectDatabase(): void {
+    global $db, $config;  // Accessing global variables - hidden dependency!
+    // ...
+}
 
-    // BAD: Fails `neverModifyGlobals`
-    $GLOBALS['db'] = new PDO(
-        'mysql:host=' . $config['database']['host'] . ';dbname=' . $config['database']['database'],
-        $config['database']['username'],
-        $config['database']['password']
-    );
+// ❌ BAD: neverModifyGlobals
+function setCache(): void {
+    $GLOBALS['cache'] = new Cache();  // Modifying via $GLOBALS array
+}
 
-    // BAD: Fails `neverAccessSuperGlobals`
-    $user = $_SESSION['user'];
+// ❌ BAD: neverModifyGloballyDeclaredVariables
+function initDb(): void {
+    global $db;           // Accessing global (first error)
+    $db = new PDO(...);   // Modifying it (second error)
+}
 
-    // BAD: Fails `neverModifySuperGlobals`
-    $_SESSION['user'] = $user;
+// ❌ BAD: neverAccessSuperGlobalsInNestedScope
+function getUserId(): int {
+    return $_SESSION['user_id'];  // Accessing superglobal in function - hidden dependency!
+}
+
+// ❌ BAD: neverModifySuperGlobalsInNestedScope
+function login(User $user): void {
+    $_SESSION['user_id'] = $user->id;  // Modifying superglobal in function
+}
+
+// ✅ GOOD: Root scope superglobal access is allowed
+$userId = $_SESSION['user_id'] ?? null;
+$requestId = $_GET['id'] ?? null;
+
+// ✅ GOOD: Pass dependencies explicitly
+function connectDatabase(array $config): PDO {
+    return new PDO($config['host'], $config['user'], $config['pass']);
+}
+
+function getUserId(array $session): int {
+    return $session['user_id'];
+}
+
+function login(User $user): array {
+    return ['user_id' => $user->id];  // Return new state instead of mutating
 }
 ```
 
-Instead of relying on global state, you should pass dependencies explicitly to your functions and classes.
+### Strict Rules (`rules-strict.neon`)
+
+```php
+<?php
+
+// ❌ BAD: Even root-scope superglobal access is forbidden
+$userId = $_SESSION['user_id'];  // neverAccessSuperGlobals
+$_SESSION['last_seen'] = time();  // neverModifySuperGlobals
+
+// ✅ GOOD: Wrap superglobals in a service/class at entry point, inject it
+class Request {
+    public function __construct(private array $query) {}
+    public function get(string $key): mixed { return $this->query[$key] ?? null; }
+}
+
+$request = new Request($_GET);  // Wrap once at entry point
+processRequest($request);        // Pass it explicitly
+```
+
+### Opinionated Rules (`rules-opinionated.neon`)
+
+```php
+<?php
+
+define('API_KEY', 'secret123');
+
+class Config {
+    public static $timeout = 30;
+    public const MAX_RETRIES = 3;
+}
+
+// ❌ BAD: ForbidUsingGlobalConstants
+function callApi(): void {
+    $key = API_KEY;  // Hidden dependency on global constant
+}
+
+// ❌ BAD: ForbidUsingStaticProperties
+function makeRequest(): void {
+    $timeout = Config::$timeout;  // Global state via static property
+}
+
+// ❌ BAD: ForbidUsingClassConstants
+function retry(): void {
+    for ($i = 0; $i < Config::MAX_RETRIES; $i++) { /* ... */ }
+}
+
+// ❌ BAD: ForbidImpureGlobalFunctions
+function generateId(): string {
+    return time() . '-' . rand();  // Hidden dependencies on system clock and RNG
+}
+
+// ✅ GOOD: Pass values explicitly
+function callApi(string $apiKey): void {
+    // Use $apiKey parameter
+}
+
+function makeRequest(int $timeout): void {
+    // Use $timeout parameter
+}
+
+function generateId(int $timestamp, int $random): string {
+    return $timestamp . '-' . $random;  // Deterministic, testable
+}
+```
+
+The key principle: **Make all dependencies explicit through function parameters and return values.**
