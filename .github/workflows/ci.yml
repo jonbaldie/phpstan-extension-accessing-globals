@@ -17,6 +17,7 @@ jobs:
 
     container:
       image: thecodingmachine/php:${{ matrix.php-version }}-v5-slim-cli
+      options: --workdir /github/workspace
 
     steps:
       - name: Checkout code
