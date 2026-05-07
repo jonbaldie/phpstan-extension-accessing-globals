@@ -2,3 +2,8 @@
 /composer.lock
 /.phpunit.result.cache
 /.phpactor.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

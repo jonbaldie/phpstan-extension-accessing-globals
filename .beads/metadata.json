@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "phpstan_extension_accessing_globals",
+  "project_id": "db6fcc15-e143-4c53-9ed8-f2f1b708d72d"
+}
