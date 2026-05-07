@@ -98,13 +98,13 @@ The test files contain deliberately bad code. When PHPStan detects violations an
 # Expected: 3 errors (accessing global variables $foo, $bar, $baz)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/access-globals.php --level=0 --no-progress
 
-# Expected: 5 errors (accessing $db via global keyword, modifying $db, modifying via $GLOBALS)
+# Expected: 20 errors (multiple nested $GLOBALS mutations plus accessing/modifying $db via global keyword)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-globals.php --level=0 --no-progress
 
 # Expected: 9 errors (accessing all superglobals in nested scopes)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/access-superglobals-in-nested-scope.php --level=0 --no-progress
 
-# Expected: 19 errors (modifying all superglobals in nested scopes)
+# Expected: 33 errors (modifying all superglobals in nested scopes, including compound mutations)
 vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-superglobals-in-nested-scope.php --level=0 --no-progress
 ```
 
@@ -140,7 +140,7 @@ vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-superglo
 # Expected: 9 errors (accessing any superglobal, even in root scope)
 vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/access-superglobals.php --level=0 --no-progress
 
-# Expected: 19 errors (modifying any superglobal, even in root scope)
+# Expected: 33 errors (modifying any superglobal, even in root scope, including compound mutations)
 vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/modify-superglobals.php --level=0 --no-progress
 ```
 
@@ -207,7 +207,7 @@ vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/usi
 #### Quick Verification (All at Once)
 
 ```bash
-# Expected: 36 errors total across all basic rule violations
+# Expected: 65 errors total across all basic rule violations
 vendor/bin/phpstan analyze -c config/rules.neon \
   tests/Rules/Data/access-globals.php \
   tests/Rules/Data/modify-globals.php \
@@ -215,7 +215,7 @@ vendor/bin/phpstan analyze -c config/rules.neon \
   tests/Rules/Data/modify-superglobals-in-nested-scope.php \
   --level=0 --no-progress
 
-# Expected: 28 errors total across all strict rule violations
+# Expected: 42 errors total across all strict rule violations
 vendor/bin/phpstan analyze -c config/rules-strict.neon \
   tests/Rules/Data/access-superglobals.php \
   tests/Rules/Data/modify-superglobals.php \
