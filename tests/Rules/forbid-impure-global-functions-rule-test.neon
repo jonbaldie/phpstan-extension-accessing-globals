@@ -1,0 +1,7 @@
+parameters:
+    bootstrapFiles:
+        - Data/using-namespaced-shadowed-functions.php
+        - Data/using-impure-functions-with-local-override.php
+    scanFiles:
+        - Data/using-namespaced-shadowed-functions.php
+        - Data/using-impure-functions-with-local-override.php

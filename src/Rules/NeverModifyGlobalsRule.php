@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -13,48 +14,66 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\String_;
 
 /**
- * @implements Rule<Node\Expr\Assign>
+ * @implements Rule<Node\Expr>
  */
 class NeverModifyGlobalsRule implements Rule
 {
     public function getNodeType(): string
     {
-        return Node\Expr\Assign::class;
+        return Expr::class;
     }
 
     /**
-     * @param Node\Expr\Assign $node
+     * @param Node\Expr $node
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $errors = [];
-        $assignedTo = $node->var;
+        $assignedTo = $this->findModifiedTarget($node);
 
         if (!$assignedTo instanceof ArrayDimFetch) {
             return [];
         }
 
+        $rootArrayFetch = $assignedTo;
+        while ($rootArrayFetch->var instanceof ArrayDimFetch) {
+            $rootArrayFetch = $rootArrayFetch->var;
+        }
+
         if (
-            !$assignedTo->var instanceof Variable ||
-            $assignedTo->var->name !== "GLOBALS"
+            !$rootArrayFetch->var instanceof Variable ||
+            $rootArrayFetch->var->name !== "GLOBALS"
         ) {
             return [];
         }
 
         $key = "unknown";
-        if ($assignedTo->dim instanceof String_) {
-            $key = $assignedTo->dim->value;
+        if ($rootArrayFetch->dim instanceof String_) {
+            $key = $rootArrayFetch->dim->value;
         }
 
-        $errors[] = RuleErrorBuilder::message(
+        return [RuleErrorBuilder::message(
             sprintf(
                 'Code is modifying global variable through $GLOBALS[\'%s\']. Use dependency injection instead.',
                 $key,
             ),
         )
             ->identifier("modify.global")
-            ->build();
+            ->build()];
+    }
 
-        return $errors;
+    private function findModifiedTarget(Expr $node): ?Expr
+    {
+        if (
+            $node instanceof Expr\Assign ||
+            $node instanceof Expr\AssignOp ||
+            $node instanceof Expr\PreInc ||
+            $node instanceof Expr\PreDec ||
+            $node instanceof Expr\PostInc ||
+            $node instanceof Expr\PostDec
+        ) {
+            return $node->var;
+        }
+
+        return null;
     }
 }

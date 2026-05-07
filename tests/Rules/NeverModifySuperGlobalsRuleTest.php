@@ -59,6 +59,34 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
                     'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
                     13,
                 ],
+                [
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
+                    15,
+                ],
+                [
+                    'Code is modifying superglobal variable $_POST. Return the new value instead.',
+                    16,
+                ],
+                [
+                    'Code is modifying superglobal variable $_REQUEST. Return the new value instead.',
+                    17,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    18,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    19,
+                ],
+                [
+                    'Code is modifying superglobal variable $_COOKIE. Return the new value instead.',
+                    20,
+                ],
+                [
+                    'Code is modifying superglobal variable $_ENV. Return the new value instead.',
+                    21,
+                ],
             ],
         );
     }

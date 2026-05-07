@@ -11,4 +11,12 @@ function test()
     $_ENV['foo'] = 'bar';
     $_SERVER['foo'] = 'bar';
     $GLOBALS['foo'] = 'bar';
+
+    $_GET['count'] += 1;
+    $_POST['message'] .= '!';
+    ++$_REQUEST['count'];
+    --$_SESSION['count'];
+    $_SESSION['cart']['count']++;
+    $_COOKIE['prefs']['theme'] .= '-dark';
+    $_ENV['flags']['beta'] ??= true;
 }

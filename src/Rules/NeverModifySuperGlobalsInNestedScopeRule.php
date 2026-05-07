@@ -5,33 +5,48 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ArrayDimFetch;
+use PhpParser\Node\Expr\AssignOp;
+use PhpParser\Node\Expr\PostDec;
+use PhpParser\Node\Expr\PostInc;
+use PhpParser\Node\Expr\PreDec;
+use PhpParser\Node\Expr\PreInc;
 use PhpParser\Node\Expr\Variable;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements Rule<Node\Expr\Assign>
+ * @implements Rule<Node>
  */
 class NeverModifySuperGlobalsInNestedScopeRule extends
     AllowSuperGlobalsInRootScopeRule
 {
     public function getNodeType(): string
     {
-        return Node\Expr\Assign::class;
+        return Node::class;
     }
 
-    /**
-     * @param Node\Expr\Assign $node
-     */
     public function processNode(Node $node, Scope $scope): array
     {
         if ($this->isInRootScope($scope)) {
             return [];
         }
 
-        $var = $node->var;
+        $var = match (true) {
+            $node instanceof Node\Expr\Assign,
+            $node instanceof AssignOp,
+            $node instanceof PreInc,
+            $node instanceof PreDec,
+            $node instanceof PostInc,
+            $node instanceof PostDec => $node->var,
+            default => null,
+        };
 
-        while ($var instanceof Node\Expr\ArrayDimFetch) {
+        if ($var === null) {
+            return [];
+        }
+
+        while ($var instanceof ArrayDimFetch) {
             $var = $var->var;
         }
 

@@ -25,39 +25,67 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             [
                 [
                     'Code is modifying superglobal variable $_GET in a nested scope. Return the new value instead.',
-                    9,
-                ],
-                [
-                    'Code is modifying superglobal variable $_POST in a nested scope. Return the new value instead.',
-                    10,
-                ],
-                [
-                    'Code is modifying superglobal variable $_REQUEST in a nested scope. Return the new value instead.',
                     11,
                 ],
                 [
-                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    'Code is modifying superglobal variable $_POST in a nested scope. Return the new value instead.',
                     12,
                 ],
                 [
-                    'Code is modifying superglobal variable $_COOKIE in a nested scope. Return the new value instead.',
+                    'Code is modifying superglobal variable $_REQUEST in a nested scope. Return the new value instead.',
                     13,
                 ],
                 [
-                    'Code is modifying superglobal variable $_FILES in a nested scope. Return the new value instead.',
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
                     14,
                 ],
                 [
-                    'Code is modifying superglobal variable $_ENV in a nested scope. Return the new value instead.',
+                    'Code is modifying superglobal variable $_COOKIE in a nested scope. Return the new value instead.',
                     15,
                 ],
                 [
-                    'Code is modifying superglobal variable $_SERVER in a nested scope. Return the new value instead.',
+                    'Code is modifying superglobal variable $_FILES in a nested scope. Return the new value instead.',
                     16,
                 ],
                 [
-                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    'Code is modifying superglobal variable $_ENV in a nested scope. Return the new value instead.',
                     17,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SERVER in a nested scope. Return the new value instead.',
+                    18,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    19,
+                ],
+                [
+                    'Code is modifying superglobal variable $_GET in a nested scope. Return the new value instead.',
+                    21,
+                ],
+                [
+                    'Code is modifying superglobal variable $_POST in a nested scope. Return the new value instead.',
+                    22,
+                ],
+                [
+                    'Code is modifying superglobal variable $_REQUEST in a nested scope. Return the new value instead.',
+                    23,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    24,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    25,
+                ],
+                [
+                    'Code is modifying superglobal variable $_COOKIE in a nested scope. Return the new value instead.',
+                    26,
+                ],
+                [
+                    'Code is modifying superglobal variable $_ENV in a nested scope. Return the new value instead.',
+                    27,
                 ],
             ],
         );

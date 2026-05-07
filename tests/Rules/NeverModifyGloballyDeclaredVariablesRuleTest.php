@@ -25,7 +25,7 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             [
                 [
                     'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
-                    11,
+                    16,
                 ],
             ],
         );
