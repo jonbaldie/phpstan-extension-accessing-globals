@@ -11,7 +11,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements Rule<Node\Expr\Assign>
+ * @implements Rule<Node\Expr>
  */
 class NeverModifySuperGlobalsRule implements Rule
 {
@@ -32,41 +32,38 @@ class NeverModifySuperGlobalsRule implements Rule
 
     public function getNodeType(): string
     {
-        return Node\Expr\Assign::class;
+        return Node\Expr::class;
     }
 
     /**
-     * @param Node\Expr\Assign $node
+     * @param Node\Expr $node
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $var = $node->var;
+        $errors = [];
+        foreach (MutationTargetResolver::resolve($node) as $target) {
+            $var = $target;
 
-        while ($var instanceof Node\Expr\ArrayDimFetch) {
-            $var = $var->var;
-        }
+            while ($var instanceof Node\Expr\ArrayDimFetch) {
+                $var = $var->var;
+            }
 
-        if (!$var instanceof Variable) {
-            return [];
-        }
+            if (!$var instanceof Variable || !is_string($var->name)) {
+                continue;
+            }
 
-        if (!is_string($var->name)) {
-            return [];
-        }
-
-        if (in_array($var->name, $this->superglobals, true)) {
-            return [
-                RuleErrorBuilder::message(
+            if (in_array($var->name, $this->superglobals, true)) {
+                $errors[] = RuleErrorBuilder::message(
                     sprintf(
                         'Code is modifying superglobal variable $%s. Return the new value instead.',
                         $var->name,
                     ),
                 )
                     ->identifier("modify.superglobal")
-                    ->build(),
-            ];
+                    ->build();
+            }
         }
 
-        return [];
+        return $errors;
     }
 }
