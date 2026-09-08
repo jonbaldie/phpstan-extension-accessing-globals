@@ -6,6 +6,7 @@ namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitorAbstract;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
@@ -72,6 +73,11 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 
             public function enterNode(Node $node)
             {
+                // Nested function-likes are processed by their own invocation of
+                // this rule; `global` declarations do not leak into nested scopes.
+                if ($node instanceof Node\FunctionLike) {
+                    return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
                 if ($node instanceof Node\Stmt\Global_) {
                     foreach ($node->vars as $var) {
                         if ($var instanceof Node\Expr\Variable && is_string($var->name)) {
@@ -119,6 +125,11 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 
             public function enterNode(Node $node)
             {
+                // Nested function-likes have their own scope: an assignment to a
+                // same-named variable there is not a modification of our global.
+                if ($node instanceof Node\FunctionLike) {
+                    return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
                 if ($node instanceof Node\Expr\Assign) {
                     $assignedTo = $node->var;
 
