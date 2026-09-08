@@ -42,4 +42,17 @@ class ForbidUsingStaticPropertiesRuleTest extends RuleTestCase
             [],
         );
     }
+
+    public function testIssue5RootScopeClosures(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-5-root-scope-closures-opinionated.php"],
+            [
+                [
+                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\IssueFiveConfig::$prop. Static properties are global state; pass the value as an argument instead.',
+                    22,
+                ],
+            ],
+        );
+    }
 }

@@ -117,4 +117,21 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue5RootScopeClosures(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-5-root-scope-closures-modify.php"],
+            [
+                [
+                    'Code is modifying superglobal variable $_COOKIE in a nested scope. Return the new value instead.',
+                    10,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SERVER in a nested scope. Return the new value instead.',
+                    14,
+                ],
+            ],
+        );
+    }
 }

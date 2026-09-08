@@ -62,4 +62,21 @@ class NeverAccessSuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue5RootScopeClosures(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-5-root-scope-closures-access.php"],
+            [
+                [
+                    'Code is accessing superglobal variable $_POST in a nested scope. Pass the value as an argument instead.',
+                    10,
+                ],
+                [
+                    'Code is accessing superglobal variable $_SESSION in a nested scope. Pass the value as an argument instead.',
+                    14,
+                ],
+            ],
+        );
+    }
 }

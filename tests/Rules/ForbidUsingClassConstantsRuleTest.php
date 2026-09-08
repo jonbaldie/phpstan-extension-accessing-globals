@@ -34,4 +34,17 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue5RootScopeClosures(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-5-root-scope-closures-opinionated.php"],
+            [
+                [
+                    "Code is accessing constant AccessingGlobals\Tests\Rules\Data\IssueFiveConfig::BAR. This creates a hidden dependency; pass the value as an argument instead.",
+                    22,
+                ],
+            ],
+        );
+    }
 }

@@ -42,4 +42,21 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue5RootScopeClosures(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-5-root-scope-closures-opinionated.php"],
+            [
+                [
+                    'Code is calling the impure function "time()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    22,
+                ],
+                [
+                    'Code is calling the impure function "rand()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    26,
+                ],
+            ],
+        );
+    }
 }

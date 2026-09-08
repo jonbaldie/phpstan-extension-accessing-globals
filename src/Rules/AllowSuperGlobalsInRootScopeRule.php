@@ -30,6 +30,10 @@ abstract class AllowSuperGlobalsInRootScopeRule implements Rule
 
     protected function isInRootScope(Scope $scope): bool
     {
-        return $scope->getFunction() === null && !$scope->isInClass();
+        // Closures and arrow functions defined at file scope have no enclosing
+        // function, but their bodies are still nested scopes, not root code.
+        return $scope->getFunction() === null
+            && !$scope->isInClass()
+            && !$scope->isInAnonymousFunction();
     }
 }
