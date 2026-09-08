@@ -130,18 +130,16 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 if ($node instanceof Node\FunctionLike) {
                     return NodeVisitor::DONT_TRAVERSE_CHILDREN;
                 }
-                if ($node instanceof Node\Expr\Assign) {
-                    $assignedTo = $node->var;
-
+                foreach (MutationTargetResolver::resolve($node) as $target) {
                     if (
-                        $assignedTo instanceof Node\Expr\Variable &&
-                        is_string($assignedTo->name) &&
-                        in_array($assignedTo->name, $this->globalVars, true)
+                        $target instanceof Node\Expr\Variable &&
+                        is_string($target->name) &&
+                        in_array($target->name, $this->globalVars, true)
                     ) {
                         $this->errors[] = RuleErrorBuilder::message(
                             sprintf(
                                 'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
-                                $assignedTo->name,
+                                $target->name,
                             ),
                         )
                             ->line($node->getLine())

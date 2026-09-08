@@ -10,18 +10,18 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements Rule<Node\Expr\Assign>
+ * @implements Rule<Node\Expr>
  */
 class NeverModifySuperGlobalsInNestedScopeRule extends
     AllowSuperGlobalsInRootScopeRule
 {
     public function getNodeType(): string
     {
-        return Node\Expr\Assign::class;
+        return Node\Expr::class;
     }
 
     /**
-     * @param Node\Expr\Assign $node
+     * @param Node\Expr $node
      */
     public function processNode(Node $node, Scope $scope): array
     {
@@ -29,33 +29,30 @@ class NeverModifySuperGlobalsInNestedScopeRule extends
             return [];
         }
 
-        $var = $node->var;
+        $errors = [];
+        foreach (MutationTargetResolver::resolve($node) as $target) {
+            $var = $target;
 
-        while ($var instanceof Node\Expr\ArrayDimFetch) {
-            $var = $var->var;
-        }
+            while ($var instanceof Node\Expr\ArrayDimFetch) {
+                $var = $var->var;
+            }
 
-        if (!$var instanceof Variable) {
-            return [];
-        }
+            if (!$var instanceof Variable || !is_string($var->name)) {
+                continue;
+            }
 
-        if (!is_string($var->name)) {
-            return [];
-        }
-
-        if (in_array($var->name, $this->superglobals, true)) {
-            return [
-                RuleErrorBuilder::message(
+            if (in_array($var->name, $this->superglobals, true)) {
+                $errors[] = RuleErrorBuilder::message(
                     sprintf(
                         'Code is modifying superglobal variable $%s in a nested scope. Return the new value instead.',
                         $var->name,
                     ),
                 )
                     ->identifier("modify.superglobal.nested")
-                    ->build(),
-            ];
+                    ->build();
+            }
         }
 
-        return [];
+        return $errors;
     }
 }

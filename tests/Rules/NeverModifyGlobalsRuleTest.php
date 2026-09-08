@@ -30,4 +30,59 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue3MutationForms(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-3-compound-modifications.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'plus\']. Use dependency injection instead.',
+                    19,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'concat\']. Use dependency injection instead.',
+                    20,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'postinc\']. Use dependency injection instead.',
+                    21,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'predec\']. Use dependency injection instead.',
+                    22,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'preinc\']. Use dependency injection instead.',
+                    23,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'postdec\']. Use dependency injection instead.',
+                    24,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'coalesce\']. Use dependency injection instead.',
+                    25,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'destructured\']. Use dependency injection instead.',
+                    26,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'reference\']. Use dependency injection instead.',
+                    27,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 9, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
