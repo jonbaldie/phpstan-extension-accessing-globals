@@ -34,4 +34,12 @@ class ForbidUsingStaticPropertiesRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testDynamicClassOperandIsSkipped(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/dynamic-static-property.php"],
+            [],
+        );
+    }
 }

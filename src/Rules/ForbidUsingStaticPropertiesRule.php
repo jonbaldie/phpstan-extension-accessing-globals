@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PhpParser\Node\Identifier;
 
 /**
  * @implements Rule<Node\Expr\StaticPropertyFetch>
@@ -31,7 +32,12 @@ class ForbidUsingStaticPropertiesRule implements Rule
             return [];
         }
 
-        $className = $node->class->toString();
+        $classNode = $node->class;
+        if (!$classNode instanceof Name) {
+            return [];
+        }
+
+        $className = $classNode->toString();
         $propertyName = $node->name instanceof Identifier ? $node->name->toString() : '{expression}';
 
         return [
