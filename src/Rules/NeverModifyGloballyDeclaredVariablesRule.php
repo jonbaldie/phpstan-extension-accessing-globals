@@ -107,8 +107,8 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
     ): void {
         $traverser = new NodeTraverser();
         $visitor = new class($globalVars, $errors) extends NodeVisitorAbstract {
-            /** @var array<string> */
-            private array $globalVars;
+            /** @var list<array<string>> */
+            private array $bindingStack;
 
             /** @var array<\PHPStan\Rules\RuleError> */
             private array $errors;
@@ -119,22 +119,25 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
              */
             public function __construct(array $globalVars, array &$errors)
             {
-                $this->globalVars = $globalVars;
+                $this->bindingStack = [$globalVars];
                 $this->errors = &$errors;
             }
 
             public function enterNode(Node $node)
             {
-                // Nested function-likes have their own scope: an assignment to a
-                // same-named variable there is not a modification of our global.
                 if ($node instanceof Node\FunctionLike) {
-                    return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                    $this->bindingStack[] = $this->bindingsForNested($node);
+                    if ($this->currentGlobals() === []) {
+                        return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                    }
+
+                    return null;
                 }
                 foreach (MutationTargetResolver::resolve($node) as $target) {
                     if (
                         $target instanceof Node\Expr\Variable &&
                         is_string($target->name) &&
-                        in_array($target->name, $this->globalVars, true)
+                        in_array($target->name, $this->currentGlobals(), true)
                     ) {
                         $this->errors[] = RuleErrorBuilder::message(
                             sprintf(
@@ -148,6 +151,53 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     }
                 }
                 return null;
+            }
+
+            public function leaveNode(Node $node)
+            {
+                if ($node instanceof Node\FunctionLike) {
+                    array_pop($this->bindingStack);
+                }
+
+                return null;
+            }
+
+            /**
+             * @return array<string>
+             */
+            private function currentGlobals(): array
+            {
+                return $this->bindingStack[array_key_last($this->bindingStack)] ?? [];
+            }
+
+            /**
+             * @return array<string>
+             */
+            private function bindingsForNested(Node\FunctionLike $node): array
+            {
+                $inherited = [];
+                if ($node instanceof Node\Expr\Closure) {
+                    foreach ($node->uses as $use) {
+                        $name = $use->var->name;
+                        if (
+                            $use->byRef
+                            && is_string($name)
+                            && in_array($name, $this->currentGlobals(), true)
+                        ) {
+                            $inherited[] = $name;
+                        }
+                    }
+                }
+                foreach ($node->getParams() as $param) {
+                    if (
+                        $param->var instanceof Node\Expr\Variable
+                        && is_string($param->var->name)
+                    ) {
+                        $inherited = array_values(array_diff($inherited, [$param->var->name]));
+                    }
+                }
+
+                return $inherited;
             }
         };
 
