@@ -84,7 +84,9 @@ class ForbidImpureGlobalFunctionsRule implements Rule
     public function processNode(Node $node, Scope $scope): array
     {
         // We only care about code inside a function or method.
-        if ($scope->getFunction() === null) {
+        // Closures and arrow functions defined at file scope have no enclosing
+        // function, but their bodies are nested scopes, not root code.
+        if ($scope->getFunction() === null && !$scope->isInAnonymousFunction()) {
             return [];
         }
 

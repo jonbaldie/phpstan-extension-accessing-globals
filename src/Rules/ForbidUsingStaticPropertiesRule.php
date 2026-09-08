@@ -28,7 +28,12 @@ class ForbidUsingStaticPropertiesRule implements Rule
     {
         // We only care about code inside a function or method.
         // Access in the global scope (e.g. for configuration) is not our concern.
-        if ($scope->getFunction() === null && !$scope->isInClass()) {
+        // Closures and arrow functions defined at file scope have no enclosing
+        // function, but their bodies are nested scopes, not root code.
+        if ($scope->getFunction() === null
+            && !$scope->isInClass()
+            && !$scope->isInAnonymousFunction()
+        ) {
             return [];
         }
 

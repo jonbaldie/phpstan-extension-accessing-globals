@@ -38,4 +38,17 @@ class ForbidUsingGlobalConstantsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue5RootScopeClosures(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-5-root-scope-closures-opinionated.php"],
+            [
+                [
+                    'Code is accessing global constant "ISSUE_FIVE_CONST". Pass it as an argument instead to make the dependency explicit.',
+                    22,
+                ],
+            ],
+        );
+    }
 }
