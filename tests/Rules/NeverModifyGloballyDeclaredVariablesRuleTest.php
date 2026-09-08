@@ -86,6 +86,33 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue4NestedShadowingAndByRefCapture(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-4-nested-shadowing.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    16,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    19,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            ['modify.global', 'modify.global'],
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testRuleClosureDeclaresOwnGlobal(): void
     {
         // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/2
