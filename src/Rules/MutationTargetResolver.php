@@ -28,6 +28,12 @@ final class MutationTargetResolver
             $targets = $node->vars;
         } elseif ($node instanceof Node\Stmt\Foreach_) {
             $targets = [$node->valueVar];
+            if ($node->byRef) {
+                // With `foreach ($container as &$value)`, writes to $value
+                // alias into the container, so the container itself is a
+                // mutation target.
+                $targets[] = $node->expr;
+            }
         } elseif (
             !$node instanceof Node\Expr\Assign &&
             !$node instanceof Node\Expr\AssignOp &&
