@@ -38,16 +38,16 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
     {
         $errors = [];
 
-        // Collect all globally declared variable names
+        // Collect all globally declared variable bindings.
         $globalVars = [];
-        $this->collectGlobalDeclarations($node, $globalVars);
+        $this->collectGlobalDeclarations($node, $scope, $globalVars);
 
         if (empty($globalVars)) {
             return [];
         }
 
-        // Find all assignments to those variables
-        $this->findAssignmentsToGlobals($node, $globalVars, $errors);
+        // Find all assignments to those bindings.
+        $this->findAssignmentsToGlobals($node, $scope, $globalVars, $errors);
 
         return $errors;
     }
@@ -56,19 +56,25 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
      * Traverse the function to collect all global variable declarations.
      *
      * @param Node\FunctionLike $function
-     * @param array<string> $globalVars
+     * @param array<string|null> $globalVars
      */
-    private function collectGlobalDeclarations(Node\FunctionLike $function, array &$globalVars): void
-    {
+    private function collectGlobalDeclarations(
+        Node\FunctionLike $function,
+        Scope $scope,
+        array &$globalVars,
+    ): void {
         $traverser = new NodeTraverser();
-        $visitor = new class($globalVars) extends NodeVisitorAbstract {
-            /** @var array<string> */
+        $visitor = new class($globalVars, $scope) extends NodeVisitorAbstract {
+            /** @var array<string|null> */
             private array $globalVars;
 
-            /** @param array<string> $globalVars */
-            public function __construct(array &$globalVars)
+            private Scope $scope;
+
+            /** @param array<string|null> $globalVars */
+            public function __construct(array &$globalVars, Scope $scope)
             {
                 $this->globalVars = &$globalVars;
+                $this->scope = $scope;
             }
 
             public function enterNode(Node $node)
@@ -80,8 +86,8 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 }
                 if ($node instanceof Node\Stmt\Global_) {
                     foreach ($node->vars as $var) {
-                        if ($var instanceof Node\Expr\Variable && is_string($var->name)) {
-                            $this->globalVars[] = $var->name;
+                        if ($var instanceof Node\Expr\Variable) {
+                            $this->globalVars[] = GlobalVariableNameResolver::resolve($var, $this->scope);
                         }
                     }
                 }
@@ -97,29 +103,33 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
      * Traverse the function to find mutations of globally declared variables.
      *
      * @param Node\FunctionLike $function
-     * @param array<string> $globalVars
+     * @param array<string|null> $globalVars
      * @param array<\PHPStan\Rules\RuleError> $errors
      */
     private function findAssignmentsToGlobals(
         Node\FunctionLike $function,
+        Scope $scope,
         array $globalVars,
         array &$errors
     ): void {
         $traverser = new NodeTraverser();
-        $visitor = new class($globalVars, $errors) extends NodeVisitorAbstract {
-            /** @var list<array<string>> */
+        $visitor = new class($globalVars, $scope, $errors) extends NodeVisitorAbstract {
+            /** @var list<array<string|null>> */
             private array $bindingStack;
+
+            private Scope $scope;
 
             /** @var array<\PHPStan\Rules\RuleError> */
             private array $errors;
 
             /**
-             * @param array<string> $globalVars
+             * @param array<string|null> $globalVars
              * @param array<\PHPStan\Rules\RuleError> $errors
              */
-            public function __construct(array $globalVars, array &$errors)
+            public function __construct(array $globalVars, Scope $scope, array &$errors)
             {
                 $this->bindingStack = [$globalVars];
+                $this->scope = $scope;
                 $this->errors = &$errors;
             }
 
@@ -148,16 +158,28 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         $globalTarget = $globalTarget->var;
                     }
 
-                    if (
-                        $globalTarget instanceof Node\Expr\Variable &&
-                        is_string($globalTarget->name) &&
-                        in_array($globalTarget->name, $this->currentGlobals(), true)
-                    ) {
-                        $this->errors[] = RuleErrorBuilder::message(
-                            sprintf(
+                    if (!$globalTarget instanceof Node\Expr\Variable) {
+                        continue;
+                    }
+
+                    $targetName = GlobalVariableNameResolver::resolve($globalTarget, $this->scope);
+                    // A null binding represents an unresolved dynamic name. Match
+                    // only another unresolved target and keep its diagnostic generic.
+                    $matchesKnownBinding = $targetName !== null
+                        && in_array($targetName, $this->currentGlobals(), true);
+                    $matchesDynamicBinding = $targetName === null
+                        && in_array(null, $this->currentGlobals(), true);
+
+                    if ($matchesKnownBinding || $matchesDynamicBinding) {
+                        $message = $targetName === null
+                            ? 'Code is modifying a variable with a dynamic name that was declared with the "global" keyword. Use dependency injection instead.'
+                            : sprintf(
                                 'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
-                                $globalTarget->name,
-                            ),
+                                $targetName,
+                            );
+
+                        $this->errors[] = RuleErrorBuilder::message(
+                            $message,
                         )
                             ->line($node->getLine())
                             ->identifier("modify.global")
@@ -177,7 +199,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             }
 
             /**
-             * @return array<string>
+             * @return array<string|null>
              */
             private function currentGlobals(): array
             {
@@ -185,7 +207,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             }
 
             /**
-             * @return array<string>
+             * @return array<string|null>
              */
             private function bindingsForNested(Node\FunctionLike $node): array
             {

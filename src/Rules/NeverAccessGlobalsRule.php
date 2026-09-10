@@ -26,13 +26,24 @@ class NeverAccessGlobalsRule implements Rule
     {
         $errors = [];
         foreach ($node->vars as $var) {
-            if (!$var instanceof Node\Expr\Variable || !is_string($var->name)) {
+            if (!$var instanceof Node\Expr\Variable) {
                 continue;
             }
+
+            $name = GlobalVariableNameResolver::resolve($var, $scope);
+            if ($name === null) {
+                $errors[] = RuleErrorBuilder::message(
+                    'Code is accessing a global variable with a dynamic name. Use dependency injection instead.',
+                )
+                    ->identifier("access.global")
+                    ->build();
+                continue;
+            }
+
             $errors[] = RuleErrorBuilder::message(
                 sprintf(
                     'Code is accessing global variable $%s. Use dependency injection instead.',
-                    $var->name,
+                    $name,
                 ),
             )
                 ->identifier("access.global")
