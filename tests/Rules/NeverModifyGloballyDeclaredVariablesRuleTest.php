@@ -253,4 +253,25 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue22ObjectPropertyMutationForms(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-22-property-mutation.php"],
+            [
+                [
+                    'Code is modifying variable $box that was declared with the "global" keyword. Use dependency injection instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying variable $box that was declared with the "global" keyword. Use dependency injection instead.',
+                    8,
+                ],
+                [
+                    'Code is modifying variable $box that was declared with the "global" keyword. Use dependency injection instead.',
+                    9,
+                ],
+            ],
+        );
+    }
 }

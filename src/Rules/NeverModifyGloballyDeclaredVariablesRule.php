@@ -154,7 +154,10 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     }
 
                     $globalTarget = $target;
-                    while ($globalTarget instanceof Node\Expr\ArrayDimFetch) {
+                    while (
+                        $globalTarget instanceof Node\Expr\ArrayDimFetch
+                        || $globalTarget instanceof Node\Expr\PropertyFetch
+                    ) {
                         $globalTarget = $globalTarget->var;
                     }
 
