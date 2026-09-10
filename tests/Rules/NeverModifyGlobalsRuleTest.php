@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifyGlobalsRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -15,7 +16,9 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new NeverModifyGlobalsRule();
+        return new NeverModifyGlobalsRule(
+            new MutationTargetResolver(self::createReflectionProvider()),
+        );
     }
 
     public function testRule(): void
@@ -28,6 +31,27 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
                     5,
                 ],
             ],
+        );
+    }
+
+    public function testIssue25ByReferenceBuiltinOnGlobals(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-25-globals-by-reference.php"],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'config\']. Use dependency injection instead.',
+                    7,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 1, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([__DIR__ . "/Data/issue-25-globals-by-reference.php"]),
+            ),
         );
     }
 

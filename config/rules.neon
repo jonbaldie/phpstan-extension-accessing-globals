@@ -1,5 +1,7 @@
 services:
     -
+        class: AccessingGlobals\Rules\MutationTargetResolver
+    -
         class: AccessingGlobals\Rules\NeverAccessGlobalsRule
         tags:
             - phpstan.rules.rule

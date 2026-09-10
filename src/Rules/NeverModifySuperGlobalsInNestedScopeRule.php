@@ -12,6 +12,11 @@ use PHPStan\Rules\RuleErrorBuilder;
 class NeverModifySuperGlobalsInNestedScopeRule extends
     AllowSuperGlobalsInRootScopeRule
 {
+    public function __construct(
+        private readonly MutationTargetResolver $mutationTargetResolver,
+    ) {
+    }
+
     public function getNodeType(): string
     {
         return Node::class;
@@ -27,7 +32,7 @@ class NeverModifySuperGlobalsInNestedScopeRule extends
         }
 
         $errors = [];
-        foreach (MutationTargetResolver::resolve($node) as $target) {
+        foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
             $var = $target;
 
             while ($var instanceof Node\Expr\ArrayDimFetch) {

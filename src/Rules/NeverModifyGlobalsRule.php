@@ -17,6 +17,11 @@ use PhpParser\Node\Scalar\String_;
  */
 class NeverModifyGlobalsRule implements Rule
 {
+    public function __construct(
+        private readonly MutationTargetResolver $mutationTargetResolver,
+    ) {
+    }
+
     public function getNodeType(): string
     {
         return Node::class;
@@ -29,7 +34,7 @@ class NeverModifyGlobalsRule implements Rule
     {
         $errors = [];
 
-        foreach (MutationTargetResolver::resolve($node) as $target) {
+        foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
             if (!$target instanceof ArrayDimFetch) {
                 continue;
             }
