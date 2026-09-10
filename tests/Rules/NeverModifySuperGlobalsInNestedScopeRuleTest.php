@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifySuperGlobalsInNestedScopeRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -15,7 +16,9 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new NeverModifySuperGlobalsInNestedScopeRule();
+        return new NeverModifySuperGlobalsInNestedScopeRule(
+            new MutationTargetResolver(self::createReflectionProvider()),
+        );
     }
 
     public function testRule(): void
@@ -203,6 +206,49 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
                     5,
                 ],
             ],
+        );
+    }
+
+    public function testIssue25ByReferenceBuiltinsOnlyInNestedScope(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-25-by-reference-builtins.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $_GET in a nested scope. Return the new value instead.',
+                    12,
+                ],
+                [
+                    'Code is modifying superglobal variable $_POST in a nested scope. Return the new value instead.',
+                    17,
+                ],
+                [
+                    'Code is modifying superglobal variable $_COOKIE in a nested scope. Return the new value instead.',
+                    22,
+                ],
+                [
+                    'Code is modifying superglobal variable $_REQUEST in a nested scope. Return the new value instead.',
+                    27,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    32,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 6, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
         );
     }
 

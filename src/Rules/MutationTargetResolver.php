@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
+use PHPStan\Analyser\Scope;
 use PHPStan\Node\Expr\NativeTypeExpr;
+use PHPStan\Reflection\ReflectionProvider;
 
 final class MutationTargetResolver
 {
+    public function __construct(
+        private readonly ReflectionProvider $reflectionProvider,
+    ) {
+    }
+
     /**
      * @return list<Node\Expr>
      */
-    public static function resolve(Node $node): array
+    public function resolve(Node $node, Scope $scope): array
     {
         // PHPStan emits a synthetic assignment for destructured foreach values.
         // The owning Foreach_ node is the real mutation event; processing both
@@ -34,6 +41,8 @@ final class MutationTargetResolver
                 // mutation target.
                 $targets[] = $node->expr;
             }
+        } elseif ($node instanceof Node\Expr\FuncCall) {
+            return $this->resolveFuncCall($node, $scope);
         } elseif (
             !$node instanceof Node\Expr\Assign &&
             !$node instanceof Node\Expr\AssignOp &&
@@ -57,6 +66,72 @@ final class MutationTargetResolver
         }
 
         return $resolvedTargets;
+    }
+
+    /**
+     * A function whose parameter is declared by-reference mutates the passed
+     * value (e.g. `array_pop($_SESSION['items'])`). Resolve those arguments as
+     * mutation targets, using parameter reflection instead of a hardcoded
+     * function list so ordinary by-value calls are never flagged.
+     *
+     * @return list<Node\Expr>
+     */
+    private function resolveFuncCall(Node\Expr\FuncCall $node, Scope $scope): array
+    {
+        if (!$node->name instanceof Node\Name) {
+            return [];
+        }
+
+        if (!$this->reflectionProvider->hasFunction($node->name, $scope)) {
+            return [];
+        }
+
+        $function = $this->reflectionProvider->getFunction($node->name, $scope);
+
+        $targets = [];
+        foreach ($function->getVariants() as $variant) {
+            $parameters = $variant->getParameters();
+            $parameterCount = count($parameters);
+            $variadicParameter = $variant->isVariadic() && $parameterCount > 0
+                ? $parameters[$parameterCount - 1]
+                : null;
+
+            foreach ($node->getArgs() as $index => $arg) {
+                // Spread arguments have an unknown mapping onto parameters.
+                if ($arg->unpack) {
+                    continue;
+                }
+
+                if ($arg->name !== null) {
+                    $parameter = null;
+                    foreach ($parameters as $candidate) {
+                        if ($candidate->getName() === $arg->name->toString()) {
+                            $parameter = $candidate;
+                            break;
+                        }
+                    }
+                } else {
+                    if ($variadicParameter !== null && $index >= $parameterCount - 1) {
+                        $parameter = $variadicParameter;
+                    } elseif ($index < $parameterCount) {
+                        $parameter = $parameters[$index];
+                    } else {
+                        $parameter = null;
+                    }
+                }
+
+                if ($parameter === null || !$parameter->passedByReference()->yes()) {
+                    continue;
+                }
+
+                // Variants share arguments; report each mutating argument once.
+                if (!in_array($arg->value, $targets, true)) {
+                    $targets[] = $arg->value;
+                }
+            }
+        }
+
+        return $targets;
     }
 
     /**

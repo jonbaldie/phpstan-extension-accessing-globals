@@ -15,6 +15,11 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class NeverModifySuperGlobalsRule implements Rule
 {
+    public function __construct(
+        private readonly MutationTargetResolver $mutationTargetResolver,
+    ) {
+    }
+
     /**
      * @var string[]
      */
@@ -41,7 +46,7 @@ class NeverModifySuperGlobalsRule implements Rule
     public function processNode(Node $node, Scope $scope): array
     {
         $errors = [];
-        foreach (MutationTargetResolver::resolve($node) as $target) {
+        foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
             $var = $target;
 
             while ($var instanceof Node\Expr\ArrayDimFetch) {

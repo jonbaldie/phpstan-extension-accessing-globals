@@ -25,6 +25,11 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class NeverModifyGloballyDeclaredVariablesRule implements Rule
 {
+    public function __construct(
+        private readonly MutationTargetResolver $mutationTargetResolver,
+    ) {
+    }
+
     public function getNodeType(): string
     {
         return Node\FunctionLike::class;
@@ -47,7 +52,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         }
 
         // Find all assignments to those bindings.
-        $this->findAssignmentsToGlobals($node, $scope, $globalVars, $errors);
+        $this->findAssignmentsToGlobals($node, $scope, $globalVars, $errors, $this->mutationTargetResolver);
 
         return $errors;
     }
@@ -110,10 +115,11 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         Node\FunctionLike $function,
         Scope $scope,
         array $globalVars,
-        array &$errors
+        array &$errors,
+        MutationTargetResolver $mutationTargetResolver,
     ): void {
         $traverser = new NodeTraverser();
-        $visitor = new class($globalVars, $scope, $errors) extends NodeVisitorAbstract {
+        $visitor = new class($globalVars, $scope, $errors, $mutationTargetResolver) extends NodeVisitorAbstract {
             /** @var list<array<string|null>> */
             private array $bindingStack;
 
@@ -122,15 +128,22 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             /** @var array<\PHPStan\Rules\RuleError> */
             private array $errors;
 
+            private MutationTargetResolver $mutationTargetResolver;
+
             /**
              * @param array<string|null> $globalVars
              * @param array<\PHPStan\Rules\RuleError> $errors
              */
-            public function __construct(array $globalVars, Scope $scope, array &$errors)
-            {
+            public function __construct(
+                array $globalVars,
+                Scope $scope,
+                array &$errors,
+                MutationTargetResolver $mutationTargetResolver,
+            ) {
                 $this->bindingStack = [$globalVars];
                 $this->scope = $scope;
                 $this->errors = &$errors;
+                $this->mutationTargetResolver = $mutationTargetResolver;
             }
 
             public function enterNode(Node $node)
@@ -143,7 +156,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 
                     return null;
                 }
-                foreach (MutationTargetResolver::resolve($node) as $target) {
+                foreach ($this->mutationTargetResolver->resolve($node, $this->scope) as $target) {
                     // `unset($db)` removes the local binding created by
                     // `global $db`; it does not remove the global variable.
                     if (

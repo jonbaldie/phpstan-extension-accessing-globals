@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifySuperGlobalsRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -15,7 +16,9 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new NeverModifySuperGlobalsRule();
+        return new NeverModifySuperGlobalsRule(
+            new MutationTargetResolver(self::createReflectionProvider()),
+        );
     }
 
     public function testRule(): void
@@ -246,6 +249,53 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
 
         $this->assertSame(
             array_fill(0, 4, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
+    public function testIssue25ByReferenceBuiltins(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-25-by-reference-builtins.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
+                    12,
+                ],
+                [
+                    'Code is modifying superglobal variable $_POST. Return the new value instead.',
+                    17,
+                ],
+                [
+                    'Code is modifying superglobal variable $_COOKIE. Return the new value instead.',
+                    22,
+                ],
+                [
+                    'Code is modifying superglobal variable $_REQUEST. Return the new value instead.',
+                    27,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    32,
+                ],
+                [
+                    'Code is modifying superglobal variable $_ENV. Return the new value instead.',
+                    45,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 7, 'modify.superglobal'),
             array_map(
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),

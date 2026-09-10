@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifyGloballyDeclaredVariablesRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -15,7 +16,9 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new NeverModifyGloballyDeclaredVariablesRule();
+        return new NeverModifyGloballyDeclaredVariablesRule(
+            new MutationTargetResolver(self::createReflectionProvider()),
+        );
     }
 
     public function testRule(): void
@@ -272,6 +275,29 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
                     9,
                 ],
             ],
+        );
+    }
+
+    public function testIssue25ByReferenceBuiltinOnGlobalKeyword(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-25-global-keyword-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $items that was declared with the "global" keyword. Use dependency injection instead.',
+                    9,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 1, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
         );
     }
 }
