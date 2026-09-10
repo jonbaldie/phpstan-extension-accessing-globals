@@ -120,4 +120,31 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue14UnsetGlobalTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-14-unset-coverage.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'root\']. Use dependency injection instead.',
+                    5,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'outer\']. Use dependency injection instead.',
+                    9,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

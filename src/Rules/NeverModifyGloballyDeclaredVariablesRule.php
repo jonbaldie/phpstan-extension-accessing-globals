@@ -94,7 +94,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
     }
 
     /**
-     * Traverse the function to find assignments to globally declared variables.
+     * Traverse the function to find mutations of globally declared variables.
      *
      * @param Node\FunctionLike $function
      * @param array<string> $globalVars
@@ -134,6 +134,14 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     return null;
                 }
                 foreach (MutationTargetResolver::resolve($node) as $target) {
+                    // `unset($db)` removes the local binding created by
+                    // `global $db`; it does not remove the global variable.
+                    if (
+                        $node instanceof Node\Stmt\Unset_
+                        && $target instanceof Node\Expr\Variable
+                    ) {
+                        continue;
+                    }
                     if (
                         $target instanceof Node\Expr\Variable &&
                         is_string($target->name) &&

@@ -151,4 +151,12 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue14UnsetGlobalBindingIsNotMutation(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-14-unset-global-binding.php"],
+            [],
+        );
+    }
 }
