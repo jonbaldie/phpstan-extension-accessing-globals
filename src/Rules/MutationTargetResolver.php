@@ -24,7 +24,9 @@ final class MutationTargetResolver
             return [];
         }
 
-        if ($node instanceof Node\Stmt\Foreach_) {
+        if ($node instanceof Node\Stmt\Unset_) {
+            $targets = $node->vars;
+        } elseif ($node instanceof Node\Stmt\Foreach_) {
             $targets = [$node->valueVar];
         } elseif (
             !$node instanceof Node\Expr\Assign &&

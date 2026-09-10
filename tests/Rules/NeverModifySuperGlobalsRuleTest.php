@@ -217,4 +217,43 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue14UnsetTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-14-unset-coverage.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
+                    4,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    5,
+                ],
+                [
+                    'Code is modifying superglobal variable $_POST. Return the new value instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    9,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 5, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

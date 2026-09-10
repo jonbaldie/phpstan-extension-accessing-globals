@@ -161,4 +161,48 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue14UnsetSuperglobalKey(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-14-unset.php"],
+            [
+                [
+                    'Code is modifying superglobal variable $_GET in a nested scope. Return the new value instead.',
+                    5,
+                ],
+            ],
+        );
+    }
+
+    public function testIssue14UnsetTargetsInNestedScope(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-14-unset-coverage.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_POST in a nested scope. Return the new value instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    9,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 3, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
