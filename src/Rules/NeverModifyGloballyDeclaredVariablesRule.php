@@ -142,15 +142,21 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     ) {
                         continue;
                     }
+
+                    $globalTarget = $target;
+                    while ($globalTarget instanceof Node\Expr\ArrayDimFetch) {
+                        $globalTarget = $globalTarget->var;
+                    }
+
                     if (
-                        $target instanceof Node\Expr\Variable &&
-                        is_string($target->name) &&
-                        in_array($target->name, $this->currentGlobals(), true)
+                        $globalTarget instanceof Node\Expr\Variable &&
+                        is_string($globalTarget->name) &&
+                        in_array($globalTarget->name, $this->currentGlobals(), true)
                     ) {
                         $this->errors[] = RuleErrorBuilder::message(
                             sprintf(
                                 'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
-                                $target->name,
+                                $globalTarget->name,
                             ),
                         )
                             ->line($node->getLine())
