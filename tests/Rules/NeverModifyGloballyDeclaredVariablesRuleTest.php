@@ -86,6 +86,61 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue15DimensionMutationForms(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-15-dimension-writes.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    8,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    10,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    11,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    12,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    13,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    14,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    15,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 9, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue4NestedShadowingAndByRefCapture(): void
     {
         $fixture = __DIR__ . "/Data/issue-4-nested-shadowing.php";
