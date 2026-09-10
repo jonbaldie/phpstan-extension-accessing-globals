@@ -218,6 +218,41 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue24ByReferenceForeachTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-24-by-reference-foreach.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    14,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SERVER. Return the new value instead.',
+                    21,
+                ],
+                [
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
+                    26,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 4, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue14UnsetTargets(): void
     {
         $fixture = __DIR__ . "/Data/issue-14-unset-coverage.php";
