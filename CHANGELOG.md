@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.0
+
+- Detect mutations through by-reference builtins (#25, #30)
+- Detect by-reference foreach mutation of superglobals (#24, #29)
+- Detect dynamic `constant()` lookups in `ForbidUsingGlobalConstants` (#23, #28)
+- Fix object-property mutations on global bindings (#22, #27)
+- Resolve impure function calls before checking (#21, #26)
+- Detect dynamic global declarations (#16, #20)
+- Detect dimension writes to global variables (#15, #19)
+- Detect `unset()` as a global mutation (#14, #18)
+- Fix `foreach` mutation target detection (#13, #17)
+
 ## 0.4.0
 
 - Treat root-scope closures as nested scopes (#5, #11)
