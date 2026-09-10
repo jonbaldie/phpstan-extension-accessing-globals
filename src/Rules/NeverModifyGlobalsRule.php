@@ -13,17 +13,17 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\String_;
 
 /**
- * @implements Rule<Node\Expr>
+ * @implements Rule<Node>
  */
 class NeverModifyGlobalsRule implements Rule
 {
     public function getNodeType(): string
     {
-        return Node\Expr::class;
+        return Node::class;
     }
 
     /**
-     * @param Node\Expr $node
+     * @param Node $node
      */
     public function processNode(Node $node, Scope $scope): array
     {

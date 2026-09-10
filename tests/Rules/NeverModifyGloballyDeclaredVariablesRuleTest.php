@@ -128,4 +128,27 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue13ForeachByReferenceValueTarget(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-13-foreach-global-binding.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    9,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            ['modify.global'],
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
