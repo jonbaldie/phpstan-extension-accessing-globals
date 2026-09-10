@@ -8,6 +8,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
@@ -21,7 +22,9 @@ class ForbidImpureGlobalFunctionsRule implements Rule
      */
     private array $impureFunctions;
 
-    public function __construct()
+    public function __construct(
+        private ReflectionProvider $reflectionProvider,
+    )
     {
         // A list of common PHP functions that are "impure" because they
         // depend on external state (e.g., system clock, environment, filesystem).
@@ -96,7 +99,13 @@ class ForbidImpureGlobalFunctionsRule implements Rule
             return [];
         }
 
-        $functionName = $node->name->toLowerString();
+        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($node->name, $scope);
+
+        if ($resolvedFunctionName === null) {
+            return [];
+        }
+
+        $functionName = strtolower($resolvedFunctionName);
 
         if (isset($this->impureFunctions[$functionName])) {
             return [
