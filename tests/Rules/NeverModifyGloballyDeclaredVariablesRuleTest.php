@@ -214,4 +214,43 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             [],
         );
     }
+
+    public function testIssue16LiteralDynamicGlobalDeclaration(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-16-literal-dynamic-global.php"],
+            [
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    6,
+                ],
+            ],
+        );
+    }
+
+    public function testIssue16RuntimeDynamicGlobalDeclaration(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-16-runtime-dynamic-global.php"],
+            [
+                [
+                    'Code is modifying a variable with a dynamic name that was declared with the "global" keyword. Use dependency injection instead.',
+                    6,
+                ],
+            ],
+        );
+    }
+
+    public function testIssue16ConstantDynamicGlobalDeclaration(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-16-constant-dynamic-global.php"],
+            [
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    8,
+                ],
+            ],
+        );
+    }
 }
