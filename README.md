@@ -17,7 +17,7 @@ This extension provides a set of rules to enforce restrictions on accessing and 
 
 The extension also includes a more "opinionated" set of rules for teams that want to enforce a stricter, more functional style of programming:
 
--   **`ForbidUsingGlobalConstants`**: Prevents functions from accessing global constants (`define()` or `const`), forcing them to be passed as arguments.
+-   **`ForbidUsingGlobalConstants`**: Prevents functions from accessing global constants (`define()` or `const`), forcing them to be passed as arguments. This also covers dynamic lookups via `constant()`: a literal name is reported like a plain constant fetch, and a dynamic name is reported conservatively since it may resolve to a global constant.
 -   **`ForbidUsingStaticProperties`**: Prevents access to static properties, which are a form of global state.
 -   **`ForbidUsingClassConstants`**: Prevents a function from accessing a constant on another class, enforcing that the value should be passed in.
 -   **`ForbidImpureGlobalFunctions`**: Flags calls to impure global functions like `time()`, `getenv()`, or `rand()` that produce side effects or rely on hidden external state.
@@ -203,6 +203,11 @@ class Config {
 // ❌ BAD: ForbidUsingGlobalConstants
 function callApi(): void {
     $key = API_KEY;  // Hidden dependency on global constant
+}
+
+// ❌ BAD: ForbidUsingGlobalConstants (via constant())
+function readMode(): string {
+    return constant('APP_MODE');  // Same hidden dependency, dynamic form
 }
 
 // ❌ BAD: ForbidUsingStaticProperties
