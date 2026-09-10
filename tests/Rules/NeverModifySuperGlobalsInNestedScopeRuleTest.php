@@ -134,4 +134,31 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue13ForeachValueTargetsOnlyInNestedScope(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-13-foreach-superglobals.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_ENV in a nested scope. Return the new value instead.',
+                    19,
+                ],
+                [
+                    'Code is modifying superglobal variable $_FILES in a nested scope. Return the new value instead.',
+                    19,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

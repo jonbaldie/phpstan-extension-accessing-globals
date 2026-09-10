@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
+use PHPStan\Node\Expr\NativeTypeExpr;
 
 final class MutationTargetResolver
 {
@@ -13,7 +14,19 @@ final class MutationTargetResolver
      */
     public static function resolve(Node $node): array
     {
+        // PHPStan emits a synthetic assignment for destructured foreach values.
+        // The owning Foreach_ node is the real mutation event; processing both
+        // would report every destructured target twice.
         if (
+            $node instanceof Node\Expr\Assign
+            && get_class($node->expr) === NativeTypeExpr::class
+        ) {
+            return [];
+        }
+
+        if ($node instanceof Node\Stmt\Foreach_) {
+            $targets = [$node->valueVar];
+        } elseif (
             !$node instanceof Node\Expr\Assign &&
             !$node instanceof Node\Expr\AssignOp &&
             !$node instanceof Node\Expr\AssignRef &&
@@ -23,11 +36,11 @@ final class MutationTargetResolver
             !$node instanceof Node\Expr\PreDec
         ) {
             return [];
-        }
-
-        $targets = [$node->var];
-        if ($node instanceof Node\Expr\AssignRef) {
-            $targets[] = $node->expr;
+        } else {
+            $targets = [$node->var];
+            if ($node instanceof Node\Expr\AssignRef) {
+                $targets[] = $node->expr;
+            }
         }
 
         $resolvedTargets = [];

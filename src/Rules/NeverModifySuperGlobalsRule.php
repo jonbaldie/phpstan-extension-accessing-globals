@@ -11,7 +11,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements Rule<Node\Expr>
+ * @implements Rule<Node>
  */
 class NeverModifySuperGlobalsRule implements Rule
 {
@@ -32,11 +32,11 @@ class NeverModifySuperGlobalsRule implements Rule
 
     public function getNodeType(): string
     {
-        return Node\Expr::class;
+        return Node::class;
     }
 
     /**
-     * @param Node\Expr $node
+     * @param Node $node
      */
     public function processNode(Node $node, Scope $scope): array
     {

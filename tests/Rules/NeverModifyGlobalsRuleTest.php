@@ -85,4 +85,39 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue13ForeachValueTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-13-foreach-global-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'root\']. Use dependency injection instead.',
+                    5,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'outer\']. Use dependency injection instead.',
+                    8,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'value\']. Use dependency injection instead.',
+                    11,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'destructured\']. Use dependency injection instead.',
+                    14,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 4, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
