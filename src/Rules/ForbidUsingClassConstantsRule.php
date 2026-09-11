@@ -34,9 +34,15 @@ class ForbidUsingClassConstantsRule implements Rule
             return [];
         }
 
+        if (!$node->name instanceof Identifier) {
+            // Dynamic class constant fetches like `Config::{$name}` cannot be resolved
+            // to a specific constant. Skip them silently.
+            return [];
+        }
+
         // The `::class` syntax is not a constant value access, it's a language feature
         // for getting a class's fully qualified name. This is not a hidden dependency.
-        if ($node->name instanceof Identifier && $node->name->toLowerString() === 'class') {
+        if ($node->name->toLowerString() === 'class') {
             return [];
         }
 

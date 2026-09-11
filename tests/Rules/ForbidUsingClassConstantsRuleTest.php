@@ -47,4 +47,12 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testDynamicClassConstantIsSkipped(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/dynamic-class-constant.php"],
+            [],
+        );
+    }
 }
