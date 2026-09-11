@@ -44,10 +44,12 @@ class NeverModifyGlobalsRule implements Rule
                 $globalTarget = $globalTarget->var;
             }
 
-            if (
-                !$globalTarget->var instanceof Variable ||
-                $globalTarget->var->name !== "GLOBALS"
-            ) {
+            if (!$globalTarget->var instanceof Variable) {
+                continue;
+            }
+
+            $name = GlobalVariableNameResolver::resolve($globalTarget->var, $scope);
+            if ($name !== "GLOBALS") {
                 continue;
             }
 

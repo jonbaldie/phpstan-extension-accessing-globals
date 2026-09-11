@@ -34,6 +34,19 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue36LiteralDynamicGlobals(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-36-literal-dynamic-superglobals.php"],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'cache\']. Use dependency injection instead.',
+                    17,
+                ],
+            ],
+        );
+    }
+
     public function testIssue25ByReferenceBuiltinOnGlobals(): void
     {
         $this->analyse(

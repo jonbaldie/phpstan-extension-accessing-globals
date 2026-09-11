@@ -62,4 +62,25 @@ class NeverAccessSuperGlobalsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue36LiteralDynamicNames(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-36-literal-dynamic-superglobals.php"],
+            [
+                [
+                    'Code is accessing superglobal variable $_GET. Pass the value as an argument instead.',
+                    7,
+                ],
+                [
+                    'Code is accessing superglobal variable $_SESSION. Pass the value as an argument instead.',
+                    12,
+                ],
+                [
+                    'Code is accessing superglobal variable $GLOBALS. Pass the value as an argument instead.',
+                    17,
+                ],
+            ],
+        );
+    }
 }

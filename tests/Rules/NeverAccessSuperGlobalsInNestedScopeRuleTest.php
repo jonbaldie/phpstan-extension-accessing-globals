@@ -79,4 +79,25 @@ class NeverAccessSuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue36LiteralDynamicNames(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-36-literal-dynamic-superglobals.php"],
+            [
+                [
+                    'Code is accessing superglobal variable $_GET in a nested scope. Pass the value as an argument instead.',
+                    7,
+                ],
+                [
+                    'Code is accessing superglobal variable $_SESSION in a nested scope. Pass the value as an argument instead.',
+                    12,
+                ],
+                [
+                    'Code is accessing superglobal variable $GLOBALS in a nested scope. Pass the value as an argument instead.',
+                    17,
+                ],
+            ],
+        );
+    }
 }
