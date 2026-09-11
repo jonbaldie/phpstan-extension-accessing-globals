@@ -15,7 +15,7 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new ForbidUsingClassConstantsRule();
+        return new ForbidUsingClassConstantsRule(self::createReflectionProvider());
     }
 
     public function testRule(): void
@@ -53,6 +53,31 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
         $this->analyse(
             [__DIR__ . "/Data/dynamic-class-constant.php"],
             [],
+        );
+    }
+
+    public function testIssue35ClassConstantViaConstant(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-35-constant-class-lookup.php"],
+            [
+                [
+                    "Code is accessing constant Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    39,
+                ],
+                [
+                    "Code is accessing constant AccessingGlobals\Tests\Rules\Data\Issue35\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    42,
+                ],
+                [
+                    "Code is accessing constant Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    51,
+                ],
+                [
+                    "Code is accessing constant AccessingGlobals\Tests\Rules\Data\Issue35\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    54,
+                ],
+            ],
         );
     }
 }
