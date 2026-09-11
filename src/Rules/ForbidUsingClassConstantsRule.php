@@ -6,24 +6,33 @@ namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ReflectionProvider;
+use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements Rule<ClassConstFetch>
+ * @implements Rule<Node\Expr>
  */
 class ForbidUsingClassConstantsRule implements Rule
 {
+    public function __construct(
+        private ReflectionProvider $reflectionProvider,
+    )
+    {
+    }
+
     public function getNodeType(): string
     {
-        return ClassConstFetch::class;
+        return Node\Expr::class;
     }
 
     /**
-     * @param ClassConstFetch $node
+     * @param Node\Expr $node
      */
     public function processNode(Node $node, Scope $scope): array
     {
@@ -34,6 +43,19 @@ class ForbidUsingClassConstantsRule implements Rule
             return [];
         }
 
+        if ($node instanceof ClassConstFetch) {
+            return $this->processClassConstFetch($node, $scope);
+        }
+
+        if ($node instanceof FuncCall) {
+            return $this->processConstantFunctionCall($node, $scope);
+        }
+
+        return [];
+    }
+
+    private function processClassConstFetch(ClassConstFetch $node, Scope $scope): array
+    {
         if (!$node->name instanceof Identifier) {
             // Dynamic class constant fetches like `Config::{$name}` cannot be resolved
             // to a specific constant. Skip them silently.
@@ -75,15 +97,85 @@ class ForbidUsingClassConstantsRule implements Rule
         $constantName = $node->name->toString();
 
         return [
-            RuleErrorBuilder::message(
-                sprintf(
-                    'Code is accessing constant %s::%s. This creates a hidden dependency; pass the value as an argument instead.',
-                    $resolvedFetchedClassName,
-                    $constantName
-                )
-            )
-                ->identifier('constant.class')
-                ->build(),
+            $this->buildClassConstantError($resolvedFetchedClassName, $constantName),
         ];
+    }
+
+    private function processConstantFunctionCall(FuncCall $node, Scope $scope): array
+    {
+        if (!$node->name instanceof Name) {
+            // Dynamic function calls like `$functionName()`.
+            return [];
+        }
+
+        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($node->name, $scope);
+
+        if ($resolvedFunctionName === null || strtolower($resolvedFunctionName) !== 'constant') {
+            return [];
+        }
+
+        $args = $node->getArgs();
+
+        if (count($args) === 0) {
+            return [];
+        }
+
+        $constantNameArgument = $args[0]->value;
+
+        if (!$constantNameArgument instanceof Node\Scalar\String_) {
+            return [];
+        }
+
+        $constantString = $constantNameArgument->value;
+
+        if (!str_contains($constantString, '::')) {
+            return [];
+        }
+
+        [$className, $constantName] = explode('::', $constantString, 2);
+
+        if ($className === '' || $constantName === '') {
+            return [];
+        }
+
+        if (strtolower($constantName) === 'class') {
+            return [];
+        }
+
+        if (in_array(strtolower($className), ['self', 'parent', 'static'], true)) {
+            return [];
+        }
+
+        $normalizedClassName = ltrim($className, '\\');
+
+        $classReflection = $scope->getClassReflection();
+
+        if ($classReflection !== null) {
+            $currentClassName = $classReflection->getName();
+
+            if (
+                $normalizedClassName === $currentClassName
+                || str_ends_with($currentClassName, '\\' . $normalizedClassName)
+            ) {
+                return [];
+            }
+        }
+
+        return [
+            $this->buildClassConstantError($normalizedClassName, $constantName),
+        ];
+    }
+
+    private function buildClassConstantError(string $className, string $constantName): IdentifierRuleError
+    {
+        return RuleErrorBuilder::message(
+            sprintf(
+                'Code is accessing constant %s::%s. This creates a hidden dependency; pass the value as an argument instead.',
+                $className,
+                $constantName
+            )
+        )
+            ->identifier('constant.class')
+            ->build();
     }
 }
