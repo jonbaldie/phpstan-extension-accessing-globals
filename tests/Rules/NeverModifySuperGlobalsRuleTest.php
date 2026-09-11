@@ -66,6 +66,23 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue36LiteralDynamicNames(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-36-literal-dynamic-superglobals.php"],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    12,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    17,
+                ],
+            ],
+        );
+    }
+
     public function testIssue3MutationForms(): void
     {
         $fixture = __DIR__ . "/Data/issue-3-compound-modifications.php";

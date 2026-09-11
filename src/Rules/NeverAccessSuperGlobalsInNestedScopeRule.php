@@ -28,16 +28,17 @@ class NeverAccessSuperGlobalsInNestedScopeRule extends
             return [];
         }
 
-        if (!is_string($node->name)) {
+        $name = GlobalVariableNameResolver::resolve($node, $scope);
+        if ($name === null) {
             return [];
         }
 
-        if (in_array($node->name, $this->superglobals, true)) {
+        if (in_array($name, $this->superglobals, true)) {
             return [
                 RuleErrorBuilder::message(
                     sprintf(
                         'Code is accessing superglobal variable $%s in a nested scope. Pass the value as an argument instead.',
-                        $node->name,
+                        $name,
                     ),
                 )
                     ->identifier("access.superglobal.nested")

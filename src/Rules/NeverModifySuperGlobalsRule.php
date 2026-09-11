@@ -53,15 +53,20 @@ class NeverModifySuperGlobalsRule implements Rule
                 $var = $var->var;
             }
 
-            if (!$var instanceof Variable || !is_string($var->name)) {
+            if (!$var instanceof Variable) {
                 continue;
             }
 
-            if (in_array($var->name, $this->superglobals, true)) {
+            $name = GlobalVariableNameResolver::resolve($var, $scope);
+            if ($name === null) {
+                continue;
+            }
+
+            if (in_array($name, $this->superglobals, true)) {
                 $errors[] = RuleErrorBuilder::message(
                     sprintf(
                         'Code is modifying superglobal variable $%s. Return the new value instead.',
-                        $var->name,
+                        $name,
                     ),
                 )
                     ->identifier("modify.superglobal")
