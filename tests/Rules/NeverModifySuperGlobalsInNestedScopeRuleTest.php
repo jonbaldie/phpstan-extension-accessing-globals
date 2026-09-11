@@ -282,4 +282,27 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue33ForeachKeyTargetsOnlyInNestedScope(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-33-foreach-key-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_POST in a nested scope. Return the new value instead.',
+                    20,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 1, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

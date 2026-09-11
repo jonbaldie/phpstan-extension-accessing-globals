@@ -35,6 +35,11 @@ final class MutationTargetResolver
             $targets = $node->vars;
         } elseif ($node instanceof Node\Stmt\Foreach_) {
             $targets = [$node->valueVar];
+            if ($node->keyVar !== null) {
+                // `foreach ($data as $k => $v)` writes the current key into
+                // $k on every iteration, just like the value target.
+                $targets[] = $node->keyVar;
+            }
             if ($node->byRef) {
                 // With `foreach ($container as &$value)`, writes to $value
                 // alias into the container, so the container itself is a

@@ -190,6 +190,10 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
                     8,
                 ],
                 [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    11,
+                ],
+                [
                     'Code is modifying superglobal variable $_REQUEST. Return the new value instead.',
                     11,
                 ],
@@ -213,7 +217,7 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
         );
 
         $this->assertSame(
-            array_fill(0, 7, 'modify.superglobal'),
+            array_fill(0, 8, 'modify.superglobal'),
             array_map(
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),
@@ -335,6 +339,37 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
 
         $this->assertSame(
             array_fill(0, 5, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
+    public function testIssue33ForeachKeyTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-33-foreach-key-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    10,
+                ],
+                [
+                    'Code is modifying superglobal variable $_POST. Return the new value instead.',
+                    20,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 3, 'modify.superglobal'),
             array_map(
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),

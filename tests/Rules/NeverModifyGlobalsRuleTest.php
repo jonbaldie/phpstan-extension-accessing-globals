@@ -126,6 +126,10 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
                     8,
                 ],
                 [
+                    'Code is modifying global variable through $GLOBALS[\'key\']. Use dependency injection instead.',
+                    11,
+                ],
+                [
                     'Code is modifying global variable through $GLOBALS[\'value\']. Use dependency injection instead.',
                     11,
                 ],
@@ -137,7 +141,7 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
         );
 
         $this->assertSame(
-            array_fill(0, 4, 'modify.global'),
+            array_fill(0, 5, 'modify.global'),
             array_map(
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),
@@ -165,6 +169,29 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
 
         $this->assertSame(
             array_fill(0, 2, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
+    public function testIssue33ForeachKeyTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-33-foreach-key-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'key\']. Use dependency injection instead.',
+                    10,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 1, 'modify.global'),
             array_map(
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),
