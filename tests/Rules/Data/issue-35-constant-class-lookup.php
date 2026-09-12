@@ -23,7 +23,7 @@ class Client extends BaseClass
         // OK: Accessing own constant via constant('self::...')
         $a = constant('self::OWN_TIMEOUT');
 
-        // OK: Accessing own constant via constant('Client::...')
+        // BAD: Accessing external class constant inside method (short name does not resolve to namespaced class)
         $b = constant('Client::OWN_TIMEOUT');
 
         // OK: Accessing own constant via fully-qualified name
