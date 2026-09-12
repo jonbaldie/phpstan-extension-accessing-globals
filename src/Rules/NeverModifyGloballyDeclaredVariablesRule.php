@@ -145,7 +145,15 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 
         $traverser = new NodeTraverser();
         $visitor = new class($globalVars, $scope, $errors, $mutationTargetResolver) extends NodeVisitorAbstract {
-            /** @var list<array<string|null>> */
+            /**
+             * One frame per function-like scope. `aliased` bindings still refer
+             * to the global variable itself, so any write to them mutates it.
+             * `byValue` bindings are copies of the binding (an arrow function's
+             * implicit capture, or a by-value `use`); only writes reached
+             * through an object handle escape the copy.
+             *
+             * @var list<array{aliased: array<string|null>, byValue: array<string|null>}>
+             */
             private array $bindingStack;
 
             private Scope $scope;
@@ -165,7 +173,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 array &$errors,
                 MutationTargetResolver $mutationTargetResolver,
             ) {
-                $this->bindingStack = [$globalVars];
+                $this->bindingStack = [['aliased' => $globalVars, 'byValue' => []]];
                 $this->scope = $scope;
                 $this->errors = &$errors;
                 $this->mutationTargetResolver = $mutationTargetResolver;
@@ -175,7 +183,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             {
                 if ($node instanceof Node\FunctionLike) {
                     $this->bindingStack[] = $this->bindingsForNested($node);
-                    if ($this->currentGlobals() === []) {
+                    if ($this->currentBindings() === ['aliased' => [], 'byValue' => []]) {
                         return NodeVisitor::DONT_TRAVERSE_CHILDREN;
                     }
 
@@ -209,10 +217,16 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     }
 
                     $globalTarget = $target;
+                    // A write reached through a property fetch goes through an
+                    // object handle, which a by-value capture shares with the
+                    // global; array dimensions are copied, so they do not.
+                    $throughObjectHandle = false;
                     while (
                         $globalTarget instanceof Node\Expr\ArrayDimFetch
                         || $globalTarget instanceof Node\Expr\PropertyFetch
                     ) {
+                        $throughObjectHandle = $throughObjectHandle
+                            || $globalTarget instanceof Node\Expr\PropertyFetch;
                         $globalTarget = $globalTarget->var;
                     }
 
@@ -220,13 +234,18 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         continue;
                     }
 
+                    $bindings = $this->currentBindings();
+                    $candidates = $throughObjectHandle
+                        ? array_merge($bindings['aliased'], $bindings['byValue'])
+                        : $bindings['aliased'];
+
                     $targetName = GlobalVariableNameResolver::resolve($globalTarget, $this->scope);
                     // A null binding represents an unresolved dynamic name. Match
                     // only another unresolved target and keep its diagnostic generic.
                     $matchesKnownBinding = $targetName !== null
-                        && in_array($targetName, $this->currentGlobals(), true);
+                        && in_array($targetName, $candidates, true);
                     $matchesDynamicBinding = $targetName === null
-                        && in_array(null, $this->currentGlobals(), true);
+                        && in_array(null, $candidates, true);
 
                     if ($matchesKnownBinding || $matchesDynamicBinding) {
                         $message = $targetName === null
@@ -257,41 +276,60 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             }
 
             /**
-             * @return array<string|null>
+             * @return array{aliased: array<string|null>, byValue: array<string|null>}
              */
-            private function currentGlobals(): array
+            private function currentBindings(): array
             {
-                return $this->bindingStack[array_key_last($this->bindingStack)] ?? [];
+                return $this->bindingStack[array_key_last($this->bindingStack)]
+                    ?? ['aliased' => [], 'byValue' => []];
             }
 
             /**
-             * @return array<string|null>
+             * @return array{aliased: array<string|null>, byValue: array<string|null>}
              */
             private function bindingsForNested(Node\FunctionLike $node): array
             {
-                $inherited = [];
-                if ($node instanceof Node\Expr\Closure) {
+                $enclosing = $this->currentBindings();
+                $aliased = [];
+                $byValue = [];
+
+                if ($node instanceof Node\Expr\ArrowFunction) {
+                    // An arrow function implicitly captures every enclosing
+                    // variable it uses, always by value.
+                    $byValue = array_merge($enclosing['aliased'], $enclosing['byValue']);
+                } elseif ($node instanceof Node\Expr\Closure) {
                     foreach ($node->uses as $use) {
                         $name = $use->var->name;
-                        if (
-                            $use->byRef
-                            && is_string($name)
-                            && in_array($name, $this->currentGlobals(), true)
+                        if (!is_string($name)) {
+                            continue;
+                        }
+
+                        if ($use->byRef && in_array($name, $enclosing['aliased'], true)) {
+                            // A by-ref capture of the global binding still
+                            // aliases the global variable.
+                            $aliased[] = $name;
+                        } elseif (
+                            in_array($name, $enclosing['aliased'], true)
+                            || in_array($name, $enclosing['byValue'], true)
                         ) {
-                            $inherited[] = $name;
+                            // Everything else is a copy of the binding: a
+                            // by-value capture, or a by-ref capture of a copy.
+                            $byValue[] = $name;
                         }
                     }
                 }
+
                 foreach ($node->getParams() as $param) {
                     if (
                         $param->var instanceof Node\Expr\Variable
                         && is_string($param->var->name)
                     ) {
-                        $inherited = array_values(array_diff($inherited, [$param->var->name]));
+                        $aliased = array_values(array_diff($aliased, [$param->var->name]));
+                        $byValue = array_values(array_diff($byValue, [$param->var->name]));
                     }
                 }
 
-                return $inherited;
+                return ['aliased' => $aliased, 'byValue' => $byValue];
             }
         };
 

@@ -351,5 +351,25 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
-}
 
+    public function testIssue47NestedScopePropertyMutations(): void
+    {
+        // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/47
+        // Arrow functions and by-value `use` captures still share the object
+        // handle, so property writes inside them mutate the global object.
+        $fixture = __DIR__ . "/Data/issue-47-nested-scope-property-mutation.php";
+
+        $message = 'Code is modifying variable $state that was declared with the "global" keyword. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [$message, 13],
+                [$message, 22],
+                [$message, 23],
+                [$message, 24],
+                [$message, 55],
+            ],
+        );
+    }
+}
