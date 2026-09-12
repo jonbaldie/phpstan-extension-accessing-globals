@@ -43,6 +43,7 @@ class StrictRulesetTest extends TestCase
             'issue-25-globals-by-reference.php',
             'issue-33-foreach-key-targets.php',
             'issue-34-strict-global-declared-mutation.php',
+            'issue-43-method-by-reference.php',
         ] as $fixture) {
             yield $fixture => [$fixture];
         }

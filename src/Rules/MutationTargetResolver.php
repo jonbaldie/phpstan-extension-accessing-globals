@@ -48,6 +48,10 @@ final class MutationTargetResolver
             }
         } elseif ($node instanceof Node\Expr\FuncCall) {
             return $this->resolveFuncCall($node, $scope);
+        } elseif ($node instanceof Node\Expr\MethodCall) {
+            return $this->resolveMethodCall($node, $scope);
+        } elseif ($node instanceof Node\Expr\StaticCall) {
+            return $this->resolveStaticCall($node, $scope);
         } elseif (
             !$node instanceof Node\Expr\Assign &&
             !$node instanceof Node\Expr\AssignOp &&
@@ -93,15 +97,89 @@ final class MutationTargetResolver
 
         $function = $this->reflectionProvider->getFunction($node->name, $scope);
 
+        return $this->resolveParametersAcceptorArguments($function->getVariants(), $node->getArgs());
+    }
+
+    /**
+     * @return list<Node\Expr>
+     */
+    private function resolveMethodCall(
+        Node\Expr\MethodCall $node,
+        Scope $scope,
+    ): array {
+        $methodName = $this->resolveMethodName($node->name, $scope);
+        if ($methodName === null) {
+            return [];
+        }
+
+        $callerType = $scope->getType($node->var);
+        $method = $scope->getMethodReflection($callerType, $methodName);
+        if ($method === null) {
+            return [];
+        }
+
+        return $this->resolveParametersAcceptorArguments($method->getVariants(), $node->getArgs());
+    }
+
+    /**
+     * @return list<Node\Expr>
+     */
+    private function resolveStaticCall(Node\Expr\StaticCall $node, Scope $scope): array
+    {
+        $methodName = $this->resolveMethodName($node->name, $scope);
+        if ($methodName === null) {
+            return [];
+        }
+
+        if ($node->class instanceof Node\Name) {
+            $classType = $scope->resolveTypeByName($node->class);
+        } elseif ($node->class instanceof Node\Expr) {
+            $classType = $scope->getType($node->class);
+            if (!$classType->canCallMethods()->yes()) {
+                $classType = $classType->getClassStringObjectType();
+            }
+        } else {
+            return [];
+        }
+
+        $method = $scope->getMethodReflection($classType, $methodName);
+        if ($method === null) {
+            return [];
+        }
+
+        return $this->resolveParametersAcceptorArguments($method->getVariants(), $node->getArgs());
+    }
+
+    private function resolveMethodName(Node\Identifier|Node\Expr $name, Scope $scope): ?string
+    {
+        if ($name instanceof Node\Identifier) {
+            return $name->toString();
+        }
+
+        $constantStrings = $scope->getType($name)->getConstantStrings();
+        if (count($constantStrings) !== 1) {
+            return null;
+        }
+
+        return $constantStrings[0]->getValue();
+    }
+
+    /**
+     * @param list<\PHPStan\Reflection\ParametersAcceptor> $variants
+     * @param list<Node\Arg> $args
+     * @return list<Node\Expr>
+     */
+    private function resolveParametersAcceptorArguments(array $variants, array $args): array
+    {
         $targets = [];
-        foreach ($function->getVariants() as $variant) {
+        foreach ($variants as $variant) {
             $parameters = $variant->getParameters();
             $parameterCount = count($parameters);
             $variadicParameter = $variant->isVariadic() && $parameterCount > 0
                 ? $parameters[$parameterCount - 1]
                 : null;
 
-            foreach ($node->getArgs() as $index => $arg) {
+            foreach ($args as $index => $arg) {
                 // Spread arguments have an unknown mapping onto parameters.
                 if ($arg->unpack) {
                     continue;

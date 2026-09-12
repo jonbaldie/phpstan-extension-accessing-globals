@@ -323,4 +323,33 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue43MethodByReferenceGlobalKeyword(): void
+    {
+        require_once __DIR__ . "/Data/issue-43-method-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-43-method-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $appData that was declared with the "global" keyword. Use dependency injection instead.',
+                    66,
+                ],
+                [
+                    'Code is modifying variable $appData that was declared with the "global" keyword. Use dependency injection instead.',
+                    67,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
+

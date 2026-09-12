@@ -254,4 +254,33 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue43MethodByReferenceMutations(): void
+    {
+        require_once __DIR__ . "/Data/issue-43-method-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-43-method-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'config\']. Use dependency injection instead.',
+                    43,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'config\']. Use dependency injection instead.',
+                    55,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
+
