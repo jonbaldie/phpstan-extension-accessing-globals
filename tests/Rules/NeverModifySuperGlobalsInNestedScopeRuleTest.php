@@ -365,4 +365,53 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue43MethodByReferenceMutationsOnlyInNestedScope(): void
+    {
+        require_once __DIR__ . "/Data/issue-43-method-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-43-method-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    42,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    43,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    44,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    45,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    54,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    55,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    56,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 7, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
+

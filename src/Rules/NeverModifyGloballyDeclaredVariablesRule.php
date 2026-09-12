@@ -118,6 +118,31 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         array &$errors,
         MutationTargetResolver $mutationTargetResolver,
     ): void {
+        if ($scope instanceof \PHPStan\Analyser\MutatingScope) {
+            foreach ($function->getParams() as $param) {
+                if (
+                    $param->var instanceof Node\Expr\Variable
+                    && is_string($param->var->name)
+                ) {
+                    $paramType = null;
+                    if ($param->type instanceof Node\Name) {
+                        $paramType = $scope->resolveTypeByName($param->type);
+                    } elseif ($param->type instanceof Node\NullableType && $param->type->type instanceof Node\Name) {
+                        $paramType = new \PHPStan\Type\NullableType($scope->resolveTypeByName($param->type->type));
+                    }
+
+                    if ($paramType !== null) {
+                        $scope = $scope->assignVariable(
+                            $param->var->name,
+                            $paramType,
+                            $paramType,
+                            \PHPStan\TrinaryLogic::createYes(),
+                        );
+                    }
+                }
+            }
+        }
+
         $traverser = new NodeTraverser();
         $visitor = new class($globalVars, $scope, $errors, $mutationTargetResolver) extends NodeVisitorAbstract {
             /** @var list<array<string|null>> */
@@ -131,9 +156,9 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             private MutationTargetResolver $mutationTargetResolver;
 
             /**
-             * @param array<string|null> $globalVars
-             * @param array<\PHPStan\Rules\RuleError> $errors
-             */
+              * @param array<string|null> $globalVars
+              * @param array<\PHPStan\Rules\RuleError> $errors
+              */
             public function __construct(
                 array $globalVars,
                 Scope $scope,
@@ -156,6 +181,23 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 
                     return null;
                 }
+
+                if ($node instanceof Node\Expr\Assign) {
+                    if (
+                        $this->scope instanceof \PHPStan\Analyser\MutatingScope
+                        && $node->var instanceof Node\Expr\Variable
+                        && is_string($node->var->name)
+                    ) {
+                        $assignedType = $this->scope->getType($node->expr);
+                        $this->scope = $this->scope->assignVariable(
+                            $node->var->name,
+                            $assignedType,
+                            $assignedType,
+                            \PHPStan\TrinaryLogic::createYes(),
+                        );
+                    }
+                }
+
                 foreach ($this->mutationTargetResolver->resolve($node, $this->scope) as $target) {
                     // `unset($db)` removes the local binding created by
                     // `global $db`; it does not remove the global variable.
