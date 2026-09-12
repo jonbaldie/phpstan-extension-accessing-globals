@@ -62,6 +62,10 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
             [__DIR__ . "/Data/issue-35-constant-class-lookup.php"],
             [
                 [
+                    "Code is accessing constant Client::OWN_TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    27,
+                ],
+                [
                     "Code is accessing constant Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
                     39,
                 ],
@@ -76,6 +80,19 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
                 [
                     "Code is accessing constant AccessingGlobals\Tests\Rules\Data\Issue35\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
                     54,
+                ],
+            ],
+        );
+    }
+
+    public function testIssue44ClassConstantViaConstantInNamespace(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-44-constant-class-lookup-namespaced.php"],
+            [
+                [
+                    "Code is accessing constant Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    26,
                 ],
             ],
         );

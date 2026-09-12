@@ -153,10 +153,7 @@ class ForbidUsingClassConstantsRule implements Rule
         if ($classReflection !== null) {
             $currentClassName = $classReflection->getName();
 
-            if (
-                $normalizedClassName === $currentClassName
-                || str_ends_with($currentClassName, '\\' . $normalizedClassName)
-            ) {
+            if (strtolower($normalizedClassName) === strtolower($currentClassName)) {
                 return [];
             }
         }
