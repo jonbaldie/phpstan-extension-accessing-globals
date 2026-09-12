@@ -96,6 +96,13 @@ class ForbidUsingClassConstantsRule implements Rule
         // external class. This creates a hidden, compile-time dependency.
         $constantName = $node->name->toString();
 
+        // Enum cases are algebraic data type variants, not configuration constants.
+        // Referencing a case like `Priority::High` is idiomatic PHP 8.1+ and is not
+        // a hidden compile-time dependency on a constant value.
+        if ($this->isEnumCase($resolvedFetchedClassName, $constantName)) {
+            return [];
+        }
+
         return [
             $this->buildClassConstantError($resolvedFetchedClassName, $constantName),
         ];
@@ -158,9 +165,22 @@ class ForbidUsingClassConstantsRule implements Rule
             }
         }
 
+        if ($this->isEnumCase($normalizedClassName, $constantName)) {
+            return [];
+        }
+
         return [
             $this->buildClassConstantError($normalizedClassName, $constantName),
         ];
+    }
+
+    private function isEnumCase(string $className, string $constantName): bool
+    {
+        if (!$this->reflectionProvider->hasClass($className)) {
+            return false;
+        }
+
+        return $this->reflectionProvider->getClass($className)->hasEnumCase($constantName);
     }
 
     private function buildClassConstantError(string $className, string $constantName): IdentifierRuleError
