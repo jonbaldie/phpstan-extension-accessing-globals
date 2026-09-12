@@ -49,7 +49,10 @@ class NeverModifySuperGlobalsRule implements Rule
         foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
             $var = $target;
 
-            while ($var instanceof Node\Expr\ArrayDimFetch) {
+            while (
+                $var instanceof Node\Expr\ArrayDimFetch
+                || $var instanceof Node\Expr\PropertyFetch
+            ) {
                 $var = $var->var;
             }
 

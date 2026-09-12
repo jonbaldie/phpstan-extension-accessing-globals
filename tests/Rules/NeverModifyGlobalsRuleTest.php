@@ -47,6 +47,49 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue42ObjectPropertyMutationForms(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-42-property-mutation.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'state\']. Use dependency injection instead.',
+                    14,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'state\']. Use dependency injection instead.',
+                    15,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'state\']. Use dependency injection instead.',
+                    16,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'root\']. Use dependency injection instead.',
+                    20,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'root\']. Use dependency injection instead.',
+                    21,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'root\']. Use dependency injection instead.',
+                    22,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 6, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue25ByReferenceBuiltinOnGlobals(): void
     {
         $this->analyse(

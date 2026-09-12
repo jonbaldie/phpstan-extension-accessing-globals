@@ -83,6 +83,49 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue42ObjectPropertyMutationForms(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-42-property-mutation.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    8,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    14,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    15,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    16,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 6, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue3MutationFormsOnlyInNestedScope(): void
     {
         $fixture = __DIR__ . "/Data/issue-3-nested-syntax-coverage.php";

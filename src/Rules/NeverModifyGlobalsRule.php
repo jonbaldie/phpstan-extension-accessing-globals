@@ -35,16 +35,25 @@ class NeverModifyGlobalsRule implements Rule
         $errors = [];
 
         foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
-            if (!$target instanceof ArrayDimFetch) {
+            if (
+                !$target instanceof ArrayDimFetch
+                && !$target instanceof Node\Expr\PropertyFetch
+            ) {
                 continue;
             }
 
             $globalTarget = $target;
-            while ($globalTarget->var instanceof ArrayDimFetch) {
+            while (
+                $globalTarget->var instanceof ArrayDimFetch
+                || $globalTarget->var instanceof Node\Expr\PropertyFetch
+            ) {
                 $globalTarget = $globalTarget->var;
             }
 
-            if (!$globalTarget->var instanceof Variable) {
+            if (
+                !$globalTarget instanceof ArrayDimFetch
+                || !$globalTarget->var instanceof Variable
+            ) {
                 continue;
             }
 
