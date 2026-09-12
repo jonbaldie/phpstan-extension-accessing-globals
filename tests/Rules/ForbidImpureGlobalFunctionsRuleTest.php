@@ -72,6 +72,31 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue45FirstClassCallables(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-45-first-class-callables.php"],
+            [
+                [
+                    'Code is calling the impure function "file_get_contents()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    9,
+                ],
+                [
+                    'Code is calling the impure function "rand()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    14,
+                ],
+                [
+                    'Code is calling the impure function "time()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    21,
+                ],
+                [
+                    'Code is calling the impure function "getenv()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    26,
+                ],
+            ],
+        );
+    }
+
     public function testIssue21NamespacedFunctionResolution(): void
     {
         // RuleTestCase analyzes fixtures in isolation, so load the declaration

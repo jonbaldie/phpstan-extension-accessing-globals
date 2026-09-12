@@ -8,12 +8,13 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Node\FunctionCallableNode;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements Rule<FuncCall>
+ * @implements Rule<Node\Expr>
  */
 class ForbidImpureGlobalFunctionsRule implements Rule
 {
@@ -78,11 +79,11 @@ class ForbidImpureGlobalFunctionsRule implements Rule
 
     public function getNodeType(): string
     {
-        return FuncCall::class;
+        return Node\Expr::class;
     }
 
     /**
-     * @param FuncCall $node
+     * @param Node\Expr $node
      */
     public function processNode(Node $node, Scope $scope): array
     {
@@ -93,13 +94,21 @@ class ForbidImpureGlobalFunctionsRule implements Rule
             return [];
         }
 
-        if (!$node->name instanceof Name) {
+        if ($node instanceof FunctionCallableNode) {
+            $name = $node->getName();
+        } elseif ($node instanceof FuncCall) {
+            $name = $node->name;
+        } else {
+            return [];
+        }
+
+        if (!$name instanceof Name) {
             // This handles dynamic function calls like `$functionName()`.
             // These are a separate problem and not the focus of this rule.
             return [];
         }
 
-        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($node->name, $scope);
+        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($name, $scope);
 
         if ($resolvedFunctionName === null) {
             return [];
@@ -112,7 +121,7 @@ class ForbidImpureGlobalFunctionsRule implements Rule
                 RuleErrorBuilder::message(
                     sprintf(
                         'Code is calling the impure function "%s()". This creates a hidden dependency on external state; pass the result as an argument instead.',
-                        $node->name->toString()
+                        $name->toString()
                     )
                 )
                     ->identifier('function.impure')
