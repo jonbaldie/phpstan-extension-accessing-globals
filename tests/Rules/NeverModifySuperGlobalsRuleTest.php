@@ -83,6 +83,61 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue42ObjectPropertyMutationForms(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-42-property-mutation.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    8,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    14,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    15,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    16,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    20,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    21,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    22,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 9, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue3MutationForms(): void
     {
         $fixture = __DIR__ . "/Data/issue-3-compound-modifications.php";
