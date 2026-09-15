@@ -77,4 +77,17 @@ class NeverAccessGlobalsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue56RootScopeGlobalDeclarationIsNoOp(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-56-root-scope-global-noop.php"],
+            [
+                [
+                    'Code is accessing global variable $nestedGlobal. Use dependency injection instead.',
+                    6,
+                ],
+            ],
+        );
+    }
 }
