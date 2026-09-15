@@ -449,6 +449,57 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue55ArrayMultisortMutations(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-55-array-multisort.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    12,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    17,
+                ],
+                [
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
+                    17,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    22,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    27,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    37,
+                ],
+                [
+                    'Code is modifying superglobal variable $_COOKIE. Return the new value instead.',
+                    47,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 8, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue43MethodByReferenceMutations(): void
     {
         require_once __DIR__ . "/Data/issue-43-method-by-reference.php";
