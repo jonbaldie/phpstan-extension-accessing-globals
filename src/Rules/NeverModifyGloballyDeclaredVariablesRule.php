@@ -89,6 +89,22 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 if ($node instanceof Node\FunctionLike) {
                     return NodeVisitor::DONT_TRAVERSE_CHILDREN;
                 }
+
+                if (
+                    $this->scope instanceof \PHPStan\Analyser\MutatingScope
+                    && $node instanceof Node\Expr\Assign
+                    && $node->var instanceof Node\Expr\Variable
+                    && is_string($node->var->name)
+                ) {
+                    $assignedType = $this->scope->getType($node->expr);
+                    $this->scope = $this->scope->assignVariable(
+                        $node->var->name,
+                        $assignedType,
+                        $assignedType,
+                        \PHPStan\TrinaryLogic::createYes(),
+                    );
+                }
+
                 if ($node instanceof Node\Stmt\Global_) {
                     foreach ($node->vars as $var) {
                         if ($var instanceof Node\Expr\Variable) {
