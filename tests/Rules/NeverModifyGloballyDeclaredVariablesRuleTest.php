@@ -324,6 +324,29 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue55ArrayMultisortOnGlobalKeyword(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-55-array-multisort.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $items that was declared with the "global" keyword. Use dependency injection instead.',
+                    44,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 1, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue43MethodByReferenceGlobalKeyword(): void
     {
         require_once __DIR__ . "/Data/issue-43-method-by-reference.php";

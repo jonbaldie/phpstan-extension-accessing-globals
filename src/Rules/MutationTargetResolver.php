@@ -97,7 +97,31 @@ final class MutationTargetResolver
 
         $function = $this->reflectionProvider->getFunction($node->name, $scope);
 
+        if ($function->isBuiltin() && strtolower($function->getName()) === 'array_multisort') {
+            return $this->resolveAllArguments($node->getArgs());
+        }
+
         return $this->resolveParametersAcceptorArguments($function->getVariants(), $node->getArgs());
+    }
+
+    /**
+     * @param list<Node\Arg> $args
+     * @return list<Node\Expr>
+     */
+    private function resolveAllArguments(array $args): array
+    {
+        $targets = [];
+        foreach ($args as $arg) {
+            if ($arg->unpack) {
+                continue;
+            }
+
+            if (!in_array($arg->value, $targets, true)) {
+                $targets[] = $arg->value;
+            }
+        }
+
+        return $targets;
     }
 
     /**
