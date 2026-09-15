@@ -6,13 +6,9 @@ namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
-/**
- * @implements Rule<Node\Stmt\Global_>
- */
-class NeverAccessGlobalsRule implements Rule
+class NeverAccessGlobalsRule extends AllowSuperGlobalsInRootScopeRule
 {
     public function getNodeType(): string
     {
@@ -24,6 +20,11 @@ class NeverAccessGlobalsRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
+        // A global declaration in file scope has no enclosing scope to import into.
+        if ($this->isInRootScope($scope)) {
+            return [];
+        }
+
         $errors = [];
         foreach ($node->vars as $var) {
             if (!$var instanceof Node\Expr\Variable) {
