@@ -372,4 +372,35 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue54DynamicGlobalDeclarationMutation(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-54-dynamic-name-global-mutation.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $runtimeVar that was declared with the "global" keyword. Use dependency injection instead.',
+                    8,
+                ],
+                [
+                    'Code is modifying variable $someVar that was declared with the "global" keyword. Use dependency injection instead.',
+                    16,
+                ],
+                [
+                    'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.',
+                    24,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 3, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
