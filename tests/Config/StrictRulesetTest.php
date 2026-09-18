@@ -45,6 +45,7 @@ class StrictRulesetTest extends TestCase
             'issue-34-strict-global-declared-mutation.php',
             'issue-43-method-by-reference.php',
             'issue-55-array-multisort.php',
+            'issue-62-constructor-by-reference.php',
         ] as $fixture) {
             yield $fixture => [$fixture];
         }

@@ -460,5 +460,49 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue62ConstructorByReferenceMutationsOnlyInNestedScope(): void
+    {
+        require_once __DIR__ . "/Data/issue-62-constructor-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-62-constructor-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    44,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    47,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    50,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION in a nested scope. Return the new value instead.',
+                    55,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    57,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    61,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 6, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
 
