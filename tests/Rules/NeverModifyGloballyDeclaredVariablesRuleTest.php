@@ -426,4 +426,36 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue62ConstructorByReferenceGlobalKeyword(): void
+    {
+        require_once __DIR__ . "/Data/issue-62-constructor-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-62-constructor-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $state that was declared with the "global" keyword. Use dependency injection instead.',
+                    78,
+                ],
+                [
+                    'Code is modifying variable $state that was declared with the "global" keyword. Use dependency injection instead.',
+                    83,
+                ],
+                [
+                    'Code is modifying variable $state that was declared with the "global" keyword. Use dependency injection instead.',
+                    87,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 3, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

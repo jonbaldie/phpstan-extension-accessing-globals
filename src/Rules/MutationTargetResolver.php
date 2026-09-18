@@ -52,6 +52,8 @@ final class MutationTargetResolver
             return $this->resolveMethodCall($node, $scope);
         } elseif ($node instanceof Node\Expr\StaticCall) {
             return $this->resolveStaticCall($node, $scope);
+        } elseif ($node instanceof Node\Expr\New_) {
+            return $this->resolveNew($node, $scope);
         } elseif (
             !$node instanceof Node\Expr\Assign &&
             !$node instanceof Node\Expr\AssignOp &&
@@ -167,6 +169,32 @@ final class MutationTargetResolver
         }
 
         $method = $scope->getMethodReflection($classType, $methodName);
+        if ($method === null) {
+            return [];
+        }
+
+        return $this->resolveParametersAcceptorArguments($method->getVariants(), $node->getArgs());
+    }
+
+    /**
+     * @return list<Node\Expr>
+     */
+    private function resolveNew(Node\Expr\New_ $node, Scope $scope): array
+    {
+        if ($node->class instanceof Node\Name) {
+            $classType = $scope->resolveTypeByName($node->class);
+        } elseif ($node->class instanceof Node\Stmt\Class_) {
+            $classType = $scope->getType($node);
+        } elseif ($node->class instanceof Node\Expr) {
+            $classType = $scope->getType($node->class);
+            if (!$classType->canCallMethods()->yes()) {
+                $classType = $classType->getClassStringObjectType();
+            }
+        } else {
+            return [];
+        }
+
+        $method = $scope->getMethodReflection($classType, '__construct');
         if ($method === null) {
             return [];
         }

@@ -547,6 +547,54 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue62ConstructorByReferenceMutations(): void
+    {
+        require_once __DIR__ . "/Data/issue-62-constructor-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-62-constructor-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    35,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    44,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    47,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    50,
+                ],
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    55,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    57,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    61,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 7, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
 
 
