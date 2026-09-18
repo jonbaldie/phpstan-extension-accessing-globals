@@ -97,6 +97,39 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue63RandomnessAndTempFilesystemFunctions(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/using-random-and-temp-functions.php"],
+            [
+                [
+                    'Code is calling the impure function "shuffle()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    9,
+                ],
+                [
+                    'Code is calling the impure function "array_rand()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    11,
+                ],
+                [
+                    'Code is calling the impure function "str_shuffle()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    13,
+                ],
+                [
+                    'Code is calling the impure function "sys_get_temp_dir()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    18,
+                ],
+                [
+                    'Code is calling the impure function "tempnam()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    20,
+                ],
+                [
+                    'Code is calling the impure function "tmpfile()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    22,
+                ],
+            ],
+        );
+    }
+
     public function testIssue21NamespacedFunctionResolution(): void
     {
         // RuleTestCase analyzes fixtures in isolation, so load the declaration

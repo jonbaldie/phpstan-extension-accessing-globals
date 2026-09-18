@@ -52,6 +52,9 @@ class ForbidImpureGlobalFunctionsRule implements Rule
             'random_int',
             'random_bytes',
             'uniqid',
+            'shuffle',
+            'array_rand',
+            'str_shuffle',
 
             // Environment related
             'getenv',
@@ -131,6 +134,9 @@ class ForbidImpureGlobalFunctionsRule implements Rule
             'fsockopen',
             'pfsockopen',
             'readline',
+            'tempnam',
+            'tmpfile',
+            'sys_get_temp_dir',
 
             // Output/Header related
             'header',
