@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.0
+
+- Detect `shuffle`, `array_rand`, `str_shuffle`, `tempnam`, `tmpfile`, `sys_get_temp_dir` as impure (#63, #65)
+- Detect by-reference constructor arguments mutating globals (#62, #64)
+- Report same-category impure functions missed by `ForbidImpureGlobalFunctionsRule` (#57, #61)
+- Fix false positive for root-scope global declarations
+- Detect `array_multisort` in-place mutation of globals (#55, #59)
+- Resolve dynamic global declarations before mutations (#58)
+- Detect global object mutations in arrow functions and by-value closures (#47, #53)
+- Don't flag enum cases as forbidden class constants in `ForbidUsingClassConstantsRule` (#46, #52)
+- Detect first-class callables of impure functions (#45, #51)
+- Forbid short-name `constant()` lookups in namespaced classes (#44, #50)
+- Detect mutations through method and static calls with by-reference parameters (#43, #49)
+- Detect object property mutations on globals (#48)
+- Fix literal dynamic superglobal detection (#36)
+- Forbid class constant lookups via `constant()` (#35, #40)
+- Register `NeverModifyGloballyDeclaredVariablesRule` in strict ruleset (#34, #39)
+- Treat foreach key variables as mutation targets (#33, #38)
+- Skip dynamic class constant fetches in `ForbidUsingClassConstantsRule` (#37)
+
 ## 0.5.0
 
 - Detect mutations through by-reference builtins (#25, #30)
