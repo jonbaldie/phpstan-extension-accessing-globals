@@ -458,4 +458,32 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue69NullsafeMethodByReferenceGlobalKeyword(): void
+    {
+        require_once __DIR__ . "/Data/issue-69-nullsafe-method-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-69-nullsafe-method-by-reference.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $appState that was declared with the "global" keyword. Use dependency injection instead.',
+                    28,
+                ],
+                [
+                    'Code is modifying variable $appState that was declared with the "global" keyword. Use dependency injection instead.',
+                    34,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

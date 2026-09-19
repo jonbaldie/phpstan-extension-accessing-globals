@@ -144,7 +144,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     if ($param->type instanceof Node\Name) {
                         $paramType = $scope->resolveTypeByName($param->type);
                     } elseif ($param->type instanceof Node\NullableType && $param->type->type instanceof Node\Name) {
-                        $paramType = new \PHPStan\Type\NullableType($scope->resolveTypeByName($param->type->type));
+                        $paramType = \PHPStan\Type\TypeCombinator::addNull($scope->resolveTypeByName($param->type->type));
                     }
 
                     if ($paramType !== null) {
@@ -222,7 +222,14 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     }
                 }
 
-                foreach ($this->mutationTargetResolver->resolve($node, $this->scope) as $target) {
+                // PHPStan's own walk rewrites `$obj?->method()` into a
+                // MethodCall before rules see it; this traversal sees the raw
+                // node, so apply the same rewrite for by-reference arguments.
+                $mutationNode = $node instanceof Node\Expr\NullsafeMethodCall
+                    ? new Node\Expr\MethodCall($node->var, $node->name, $node->args, $node->getAttributes())
+                    : $node;
+
+                foreach ($this->mutationTargetResolver->resolve($mutationNode, $this->scope) as $target) {
                     // `unset($db)` removes the local binding created by
                     // `global $db`; it does not remove the global variable.
                     if (
