@@ -459,6 +459,32 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue67NullableClassParameterDoesNotCrash(): void
+    {
+        // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/67
+        // Seeding a `?Class` parameter type must not instantiate the
+        // nonexistent PHPStan\Type\NullableType class.
+        $fixture = __DIR__ . "/Data/issue-67-nullable-class-param.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $globalConnection that was declared with the "global" keyword. Use dependency injection instead.',
+                    15,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            ['modify.global'],
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue69NullsafeMethodByReferenceGlobalKeyword(): void
     {
         require_once __DIR__ . "/Data/issue-69-nullsafe-method-by-reference.php";
