@@ -549,4 +549,30 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue74CompoundAssignmentDynamicGlobalName(): void
+    {
+        // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/74
+        // A compound assignment must update the simulated scope before a
+        // dynamic global declaration resolves its variable name.
+        $fixture = __DIR__ . "/Data/issue-74-stale-dynamic-global.php";
+
+        $message = 'Code is modifying variable $db_suffix that was declared with the "global" keyword. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [$message, 12],
+                [$message, 21],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
