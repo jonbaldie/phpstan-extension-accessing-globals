@@ -43,6 +43,19 @@ class ForbidUsingStaticPropertiesRuleTest extends RuleTestCase
         );
     }
 
+    public function testThisClassOperandIsReported(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/Issue76Probe.php"],
+            [
+                [
+                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Issue76Probe::$prop. Static properties are global state; pass the value as an argument instead.',
+                    11,
+                ],
+            ],
+        );
+    }
+
     public function testIssue5RootScopeClosures(): void
     {
         $this->analyse(

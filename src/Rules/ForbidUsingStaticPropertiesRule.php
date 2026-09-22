@@ -38,11 +38,19 @@ class ForbidUsingStaticPropertiesRule implements Rule
         }
 
         $classNode = $node->class;
-        if (!$classNode instanceof Name) {
+        if ($classNode instanceof Name) {
+            $className = $classNode->toString();
+        } elseif ($classNode instanceof Node\Expr\Variable && $classNode->name === 'this') {
+            $classReflection = $scope->getClassReflection();
+            if ($classReflection === null) {
+                return [];
+            }
+
+            $className = $classReflection->getName();
+        } else {
             return [];
         }
 
-        $className = $classNode->toString();
         $propertyName = $node->name instanceof Identifier ? $node->name->toString() : '{expression}';
 
         return [
