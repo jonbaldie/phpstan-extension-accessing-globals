@@ -92,11 +92,13 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 
                 if (
                     $this->scope instanceof \PHPStan\Analyser\MutatingScope
-                    && $node instanceof Node\Expr\Assign
+                    && ($node instanceof Node\Expr\Assign || $node instanceof Node\Expr\AssignOp)
                     && $node->var instanceof Node\Expr\Variable
                     && is_string($node->var->name)
                 ) {
-                    $assignedType = $this->scope->getType($node->expr);
+                    $assignedType = $node instanceof Node\Expr\AssignOp
+                        ? $this->scope->getType($node)
+                        : $this->scope->getType($node->expr);
                     $this->scope = $this->scope->assignVariable(
                         $node->var->name,
                         $assignedType,
@@ -211,13 +213,15 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     return null;
                 }
 
-                if ($node instanceof Node\Expr\Assign) {
+                if ($node instanceof Node\Expr\Assign || $node instanceof Node\Expr\AssignOp) {
                     if (
                         $this->scope instanceof \PHPStan\Analyser\MutatingScope
                         && $node->var instanceof Node\Expr\Variable
                         && is_string($node->var->name)
                     ) {
-                        $assignedType = $this->scope->getType($node->expr);
+                        $assignedType = $node instanceof Node\Expr\AssignOp
+                            ? $this->scope->getType($node)
+                            : $this->scope->getType($node->expr);
                         $this->scope = $this->scope->assignVariable(
                             $node->var->name,
                             $assignedType,
@@ -226,7 +230,9 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         );
                     }
 
-                    $this->trackAliases($node);
+                    if ($node instanceof Node\Expr\Assign) {
+                        $this->trackAliases($node);
+                    }
                 }
 
                 // PHPStan's own walk rewrites `$obj?->method()` into a
