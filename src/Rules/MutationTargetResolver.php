@@ -68,6 +68,20 @@ final class MutationTargetResolver
             $targets = [$node->var];
             if ($node instanceof Node\Expr\AssignRef) {
                 $targets[] = $node->expr;
+            } elseif (
+                $node instanceof Node\Expr\Assign
+                && !$node->var instanceof Node\Expr\Array_
+                && !$node->var instanceof Node\Expr\List_
+            ) {
+                // A plain assignment stores the assigned expression in the
+                // target container. By-reference items in an array or list
+                // literal (`$arr = [&$db];`) bind a live alias of the
+                // referenced variable, which later writes through the alias
+                // mutate - resolve those items as mutation targets of the
+                // variable they reference, like the direct AssignRef form.
+                // Destructuring assignments (list/array LHS) dereference the
+                // items instead, so no reference survives there.
+                self::collectByRefReferences($node->expr, $targets);
             }
         }
 
@@ -285,6 +299,32 @@ final class MutationTargetResolver
             }
 
             self::resolveTarget($item->value, $resolvedTargets);
+        }
+    }
+
+    /**
+     * Collect the expressions referenced by by-reference items of an array or
+     * list literal, recursively through nested literals.
+     *
+     * @param Node\Expr $expr
+     * @param list<Node\Expr> $targets
+     */
+    private static function collectByRefReferences(Node\Expr $expr, array &$targets): void
+    {
+        if (!$expr instanceof Node\Expr\Array_ && !$expr instanceof Node\Expr\List_) {
+            return;
+        }
+
+        foreach ($expr->items as $item) {
+            if ($item === null) {
+                continue;
+            }
+
+            if ($item->byRef) {
+                $targets[] = $item->value;
+            }
+
+            self::collectByRefReferences($item->value, $targets);
         }
     }
 }

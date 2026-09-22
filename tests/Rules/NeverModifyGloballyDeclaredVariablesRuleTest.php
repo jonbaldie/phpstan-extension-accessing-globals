@@ -485,6 +485,43 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue73ReferenceAliasViaArrayLiteral(): void
+    {
+        // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/73
+        // A by-reference item inside an array literal (`$alias = [&$db];`)
+        // is a live alias of the global: creating it mutates the global
+        // binding just like the direct `$ref = &$db;` form, and later
+        // dimension writes through the alias slot mutate it too.
+        $fixture = __DIR__ . "/Data/issue-73-reference-alias-array-literal.php";
+
+        $message = 'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [$message, 9],
+                [$message, 16],
+                [$message, 17],
+                [$message, 24],
+                [$message, 25],
+                // The nested literal registers its reference creation, but
+                // writes through the nested path stay unreported (miss).
+                [$message, 32],
+                [$message, 40],
+                [$message, 41],
+                [$message, 56],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 9, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
     public function testIssue69NullsafeMethodByReferenceGlobalKeyword(): void
     {
         require_once __DIR__ . "/Data/issue-69-nullsafe-method-by-reference.php";
