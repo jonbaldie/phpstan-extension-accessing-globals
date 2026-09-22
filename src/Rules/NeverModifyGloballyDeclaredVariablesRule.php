@@ -168,7 +168,12 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
              * implicit capture, or a by-value `use`); only writes reached
              * through an object handle escape the copy.
              *
-             * @var list<array{aliased: array<string|null>, byValue: array<string|null>}>
+             * `aliases` records bindings created by by-reference items of an
+             * array literal (`$alias = [&$db];`): the alias variable holds the
+             * global's reference in a slot, so dimension writes through a
+             * registered slot mutate the global itself.
+             *
+             * @var list<array{aliased: array<string|null>, byValue: array<string|null>, aliases: array<string, array<int|string, string|null>>}>
              */
             private array $bindingStack;
 
@@ -189,7 +194,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 array &$errors,
                 MutationTargetResolver $mutationTargetResolver,
             ) {
-                $this->bindingStack = [['aliased' => $globalVars, 'byValue' => []]];
+                $this->bindingStack = [['aliased' => $globalVars, 'byValue' => [], 'aliases' => []]];
                 $this->scope = $scope;
                 $this->errors = &$errors;
                 $this->mutationTargetResolver = $mutationTargetResolver;
@@ -199,7 +204,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             {
                 if ($node instanceof Node\FunctionLike) {
                     $this->bindingStack[] = $this->bindingsForNested($node);
-                    if ($this->currentBindings() === ['aliased' => [], 'byValue' => []]) {
+                    if ($this->currentBindings() === ['aliased' => [], 'byValue' => [], 'aliases' => []]) {
                         return NodeVisitor::DONT_TRAVERSE_CHILDREN;
                     }
 
@@ -220,6 +225,8 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                             \PHPStan\TrinaryLogic::createYes(),
                         );
                     }
+
+                    $this->trackAliases($node);
                 }
 
                 // PHPStan's own walk rewrites `$obj?->method()` into a
@@ -243,11 +250,17 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     // A write reached through a property fetch goes through an
                     // object handle, which a by-value capture shares with the
                     // global; array dimensions are copied, so they do not.
+                    $throughDimensions = false;
                     $throughObjectHandle = false;
+                    $outermostFetch = null;
                     while (
                         $globalTarget instanceof Node\Expr\ArrayDimFetch
                         || $globalTarget instanceof Node\Expr\PropertyFetch
                     ) {
+                        if ($outermostFetch === null) {
+                            $outermostFetch = $globalTarget;
+                        }
+                        $throughDimensions = true;
                         $throughObjectHandle = $throughObjectHandle
                             || $globalTarget instanceof Node\Expr\PropertyFetch;
                         $globalTarget = $globalTarget->var;
@@ -258,11 +271,40 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     }
 
                     $bindings = $this->currentBindings();
+                    $targetName = GlobalVariableNameResolver::resolve($globalTarget, $this->scope);
+
+                    // Writes through an alias created by an array literal
+                    // (`$alias = [&$db];`) mutate the referenced global, not
+                    // the alias container: only when the write targets a
+                    // registered slot of the alias. Unregistered slots, appends
+                    // and property writes rebind the alias container itself.
+                    if ($targetName !== null && array_key_exists($targetName, $bindings['aliases'])) {
+                        $slots = $bindings['aliases'][$targetName];
+                        $reached = false;
+                        if (
+                            $outermostFetch instanceof Node\Expr\ArrayDimFetch
+                            && $outermostFetch->dim !== null
+                            && $this->scope instanceof \PHPStan\Analyser\MutatingScope
+                        ) {
+                            foreach ($this->constantSlotKeys($outermostFetch->dim) as $slotKey) {
+                                if (!array_key_exists($slotKey, $slots)) {
+                                    continue;
+                                }
+
+                                $this->reportMutation($slots[$slotKey], $node);
+                                $reached = true;
+                            }
+                        }
+
+                        if ($reached) {
+                            continue;
+                        }
+                    }
+
                     $candidates = $throughObjectHandle
                         ? array_merge($bindings['aliased'], $bindings['byValue'])
                         : $bindings['aliased'];
 
-                    $targetName = GlobalVariableNameResolver::resolve($globalTarget, $this->scope);
                     // A null binding represents an unresolved dynamic name. Match
                     // only another unresolved target and keep its diagnostic generic.
                     $matchesKnownBinding = $targetName !== null
@@ -271,19 +313,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         && in_array(null, $candidates, true);
 
                     if ($matchesKnownBinding || $matchesDynamicBinding) {
-                        $message = $targetName === null
-                            ? 'Code is modifying a variable with a dynamic name that was declared with the "global" keyword. Use dependency injection instead.'
-                            : sprintf(
-                                'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
-                                $targetName,
-                            );
-
-                        $this->errors[] = RuleErrorBuilder::message(
-                            $message,
-                        )
-                            ->line($node->getLine())
-                            ->identifier("modify.global")
-                            ->build();
+                        $this->reportMutation($targetName, $node);
                     }
                 }
                 return null;
@@ -299,27 +329,178 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             }
 
             /**
-             * @return array{aliased: array<string|null>, byValue: array<string|null>}
+             * @return array{aliased: array<string|null>, byValue: array<string|null>, aliases: array<string, array<int|string, string|null>>}
              */
             private function currentBindings(): array
             {
                 return $this->bindingStack[array_key_last($this->bindingStack)]
-                    ?? ['aliased' => [], 'byValue' => []];
+                    ?? ['aliased' => [], 'byValue' => [], 'aliases' => []];
             }
 
             /**
-             * @return array{aliased: array<string|null>, byValue: array<string|null>}
+             * Record an alias binding created by a by-reference item of an
+             * array literal (`$alias = [&$db];`). A whole-variable rebind of
+             * the alias container discards any reference it carried.
+             */
+            private function trackAliases(Node\Expr\Assign $node): void
+            {
+                $frameKey = array_key_last($this->bindingStack);
+                if ($frameKey === null) {
+                    return;
+                }
+
+                $lhs = $node->var;
+                if ($lhs instanceof Node\Expr\Variable && is_string($lhs->name)) {
+                    unset($this->bindingStack[$frameKey]['aliases'][$lhs->name]);
+                }
+
+                if (
+                    !$lhs instanceof Node\Expr\Variable
+                    || !is_string($lhs->name)
+                    || (!$node->expr instanceof Node\Expr\Array_ && !$node->expr instanceof Node\Expr\List_)
+                    || !$this->scope instanceof \PHPStan\Analyser\MutatingScope
+                ) {
+                    return;
+                }
+
+                $implicitIndex = 0;
+                foreach ($node->expr->items as $item) {
+                    if ($item === null) {
+                        continue;
+                    }
+
+                    if ($item->key === null) {
+                        $slotKey = $implicitIndex;
+                        $implicitIndex = $implicitIndex + 1;
+                    } else {
+                        $slotKey = $this->constantScalarKey($item->key);
+                        if ($slotKey === null) {
+                            // The slot cannot be resolved now or later; writes
+                            // through it stay unreported.
+                            continue;
+                        }
+
+                        if (is_int($slotKey)) {
+                            $implicitIndex = max($implicitIndex, $slotKey + 1);
+                        }
+                    }
+
+                    if (!$item->byRef) {
+                        continue;
+                    }
+
+                    $referenced = $item->value;
+                    while (
+                        $referenced instanceof Node\Expr\ArrayDimFetch
+                        || $referenced instanceof Node\Expr\PropertyFetch
+                    ) {
+                        $referenced = $referenced->var;
+                    }
+
+                    if (!$referenced instanceof Node\Expr\Variable) {
+                        continue;
+                    }
+
+                    $referencedName = GlobalVariableNameResolver::resolve($referenced, $this->scope);
+                    if (
+                        $referencedName === null
+                        || !in_array($referencedName, $this->bindingStack[$frameKey]['aliased'], true)
+                    ) {
+                        continue;
+                    }
+
+                    $this->bindingStack[$frameKey]['aliases'][$lhs->name][$slotKey] = $referencedName;
+                }
+            }
+
+            /**
+             * A literal, canonical array key (int, canonical numeric string
+             * or other string); bool keys follow PHP's cast to int. Returns
+             * null for dynamic or non-scalar keys.
+             *
+             * @return int|string|null
+             */
+            private function constantScalarKey(Node\Expr $key)
+            {
+                if (!$this->scope instanceof \PHPStan\Analyser\MutatingScope) {
+                    return null;
+                }
+
+                $values = $this->scope->getType($key)->getConstantScalarValues();
+                if (count($values) !== 1) {
+                    return null;
+                }
+
+                $value = $values[0];
+                if (is_int($value) || (is_string($value) && preg_match('/^(0|[1-9]\d*)$/', $value) === 1)) {
+                    return (int) $value;
+                }
+
+                if (is_string($value)) {
+                    return $value;
+                }
+
+                if (is_bool($value)) {
+                    return $value ? 1 : 0;
+                }
+
+                return null;
+            }
+
+            /**
+             * @return list<int|string>
+             */
+            private function constantSlotKeys(Node\Expr $dim): array
+            {
+                if (!$this->scope instanceof \PHPStan\Analyser\MutatingScope) {
+                    return [];
+                }
+
+                $keys = [];
+                foreach ($this->scope->getType($dim)->getConstantScalarValues() as $value) {
+                    if (is_int($value) || (is_string($value) && preg_match('/^(0|[1-9]\d*)$/', $value) === 1)) {
+                        $keys[] = (int) $value;
+                    } elseif (is_string($value)) {
+                        $keys[] = $value;
+                    } elseif (is_bool($value)) {
+                        $keys[] = $value ? 1 : 0;
+                    }
+                }
+
+                return $keys;
+            }
+
+            private function reportMutation(?string $targetName, Node $node): void
+            {
+                $message = $targetName === null
+                    ? 'Code is modifying a variable with a dynamic name that was declared with the "global" keyword. Use dependency injection instead.'
+                    : sprintf(
+                        'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
+                        $targetName,
+                    );
+
+                $this->errors[] = RuleErrorBuilder::message($message)
+                    ->line($node->getLine())
+                    ->identifier("modify.global")
+                    ->build();
+            }
+
+            /**
+             * @return array{aliased: array<string|null>, byValue: array<string|null>, aliases: array<string, array<int|string, string|null>>}
              */
             private function bindingsForNested(Node\FunctionLike $node): array
             {
                 $enclosing = $this->currentBindings();
                 $aliased = [];
                 $byValue = [];
+                $aliases = [];
 
                 if ($node instanceof Node\Expr\ArrowFunction) {
                     // An arrow function implicitly captures every enclosing
-                    // variable it uses, always by value.
+                    // variable it uses, always by value. The copy still shares
+                    // the reference slots with the global.
                     $byValue = array_merge($enclosing['aliased'], $enclosing['byValue']);
+                    $aliases = $enclosing['aliases'];
                 } elseif ($node instanceof Node\Expr\Closure) {
                     foreach ($node->uses as $use) {
                         $name = $use->var->name;
@@ -331,6 +512,10 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                             // A by-ref capture of the global binding still
                             // aliases the global variable.
                             $aliased[] = $name;
+                        } elseif (array_key_exists($name, $enclosing['aliases'])) {
+                            // A by-ref or by-value capture of an alias
+                            // container keeps the reference slots alive.
+                            $aliases[$name] = $enclosing['aliases'][$name];
                         } elseif (
                             in_array($name, $enclosing['aliased'], true)
                             || in_array($name, $enclosing['byValue'], true)
@@ -349,10 +534,11 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     ) {
                         $aliased = array_values(array_diff($aliased, [$param->var->name]));
                         $byValue = array_values(array_diff($byValue, [$param->var->name]));
+                        unset($aliases[$param->var->name]);
                     }
                 }
 
-                return ['aliased' => $aliased, 'byValue' => $byValue];
+                return ['aliased' => $aliased, 'byValue' => $byValue, 'aliases' => $aliases];
             }
         };
 

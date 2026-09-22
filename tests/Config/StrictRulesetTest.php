@@ -46,6 +46,7 @@ class StrictRulesetTest extends TestCase
             'issue-43-method-by-reference.php',
             'issue-55-array-multisort.php',
             'issue-62-constructor-by-reference.php',
+            'issue-73-reference-alias-array-literal.php',
         ] as $fixture) {
             yield $fixture => [$fixture];
         }
