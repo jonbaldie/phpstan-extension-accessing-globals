@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.1
+
+- Detect additional impure global functions and fix `get_current_user()` detection (#68)
+- Detect mutations through nullsafe method calls and fix nullable class parameter analysis (#69, #72)
+- Detect global mutations through by-reference aliases in array literals (#73)
+- Resolve dynamic global names after compound assignments (#74)
+- Detect static property access through `$this` (#76)
+
 ## 0.6.0
 
 - Detect `shuffle`, `array_rand`, `str_shuffle`, `tempnam`, `tmpfile`, `sys_get_temp_dir` as impure (#63, #65)
