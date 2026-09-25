@@ -575,4 +575,33 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue86UnionIntersectionDnfByReference(): void
+    {
+        // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/86
+        require_once __DIR__ . "/Data/issue-86-union-intersection-dnf-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-86-union-intersection-dnf-by-reference.php";
+
+        $message = 'Code is modifying variable $appState that was declared with the "global" keyword. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [$message, 34],
+                [$message, 40],
+                [$message, 46],
+                [$message, 52],
+                [$message, 58],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 5, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
+

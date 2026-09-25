@@ -143,10 +143,10 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     && is_string($param->var->name)
                 ) {
                     $paramType = null;
-                    if ($param->type instanceof Node\Name) {
-                        $paramType = $scope->resolveTypeByName($param->type);
-                    } elseif ($param->type instanceof Node\NullableType && $param->type->type instanceof Node\Name) {
-                        $paramType = \PHPStan\Type\TypeCombinator::addNull($scope->resolveTypeByName($param->type->type));
+                    if ($param->type !== null) {
+                        $isNullable = $param->default instanceof Node\Expr\ConstFetch
+                            && strtolower((string) $param->default->name) === 'null';
+                        $paramType = $scope->getFunctionType($param->type, $isNullable, $param->variadic);
                     }
 
                     if ($paramType !== null) {
