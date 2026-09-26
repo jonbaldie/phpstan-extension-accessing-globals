@@ -1,0 +1,8 @@
+Setup attempt before Composer autoload refresh
+
+Environment: PHP 8.4.1, PHPStan 2.2.13; local vendor directory existed.
+Commands attempted: documented default, strict, and opinionated aggregate analyzes.
+Observed for default and strict: exit code 1 before fixture analysis; Resolver.php reported that AccessingGlobals\\Rules\\MutationTargetResolver was not found.
+Observed for opinionated: exit code 1 before fixture analysis; Resolver.php reported that AccessingGlobals\\Rules\\ForbidUsingGlobalConstantsRule was not found.
+
+Diagnosis: Composer's current optimized class map did not resolve the source classes. `composer dump-autoload --no-interaction --optimize` regenerated the vendor autoloader; `class_exists('AccessingGlobals\\Rules\\MutationTargetResolver')` then returned true. This was local setup state, not reported as a product bug.
