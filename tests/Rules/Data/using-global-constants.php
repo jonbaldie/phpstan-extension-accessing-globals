@@ -19,7 +19,7 @@ function myFunction()
     echo ANOTHER_CONSTANT;
 }
 
-class MyClass
+class GlobalConstantConsumer
 {
     public function myMethod()
     {
