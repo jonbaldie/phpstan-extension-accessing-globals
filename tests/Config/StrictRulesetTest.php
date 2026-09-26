@@ -13,6 +13,35 @@ use PHPUnit\Framework\TestCase;
  */
 class StrictRulesetTest extends TestCase
 {
+    public function testStrictRulesetReportsAllRootScopeSuperglobalReadsWhileBasicRulesAllowThem(): void
+    {
+        $path = __DIR__ . '/../Rules/Data/access-superglobals-at-root-scope.php';
+
+        $this->assertSame(
+            array_map(
+                static fn (int $line): string => $line . ':access.superglobal',
+                range(3, 11),
+            ),
+            $this->analyse('config/rules-strict.neon', $path),
+        );
+        $this->assertSame([], $this->analyse('config/rules.neon', $path));
+    }
+
+    public function testStrictRulesetReportsRootScopeSuperglobalReadAndWriteWhileBasicRulesAllowThem(): void
+    {
+        $path = __DIR__ . '/../Rules/Data/superglobals-root-scope-read-write.php';
+
+        $this->assertSame(
+            [
+                '3:access.superglobal',
+                '4:access.superglobal',
+                '4:modify.superglobal',
+            ],
+            $this->analyse('config/rules-strict.neon', $path),
+        );
+        $this->assertSame([], $this->analyse('config/rules.neon', $path));
+    }
+
     public function testStrictRulesetReportsWritesToGlobalDeclaredVariables(): void
     {
         $errors = $this->analyse(
