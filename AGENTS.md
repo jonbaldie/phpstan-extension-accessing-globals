@@ -68,25 +68,19 @@ vendor/bin/phpunit
 
 ### Manual Verification Commands
 
-**⚠️ CRITICAL: All commands below are EXPECTED TO FAIL (exit code 1).** 
-
-**This is CORRECT behavior!** ✅
-
-The test files contain deliberately bad code. When PHPStan detects violations and exits with code 1, it proves the rules are working correctly.
+Commands that analyze deliberately bad code should fail with exit code 1 and report the stated violations. The basic-rules checks for root-scope superglobals should pass with exit code 0 and no findings, confirming that the basic rules allow those root-scope operations.
 
 ---
 
 #### Understanding Test Results
 
-✅ **SUCCESS = Exit Code 1 + Error Messages**
-- Command exits with code 1
-- Shows "[ERROR] Found X errors"
-- Lists specific violations with identifiers (e.g., `🪪 access.global`)
+✅ **SUCCESS = Expected Result For That Command**
+- Violation fixtures exit with code 1 and list the expected diagnostics with identifiers (e.g., `🪪 access.global`).
+- Basic-rules root-scope checks exit with code 0 and show "[OK] No errors."
 
-❌ **FAILURE = Exit Code 0 (No Errors)**
-- Command exits with code 0
-- Shows "No errors found"
-- This means the rule is BROKEN and not detecting violations
+❌ **FAILURE = Result Differs From The Command's Expected Result**
+- A violation fixture exits with code 0, so its expected finding was not detected.
+- A basic-rules root-scope check exits with code 1, so an allowed root-scope operation was reported.
 
 ---
 
@@ -134,13 +128,25 @@ vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/modify-superglo
 
 #### Strict Rules (config/rules-strict.neon)
 
-**Expected:** Each command should exit with code 1 and show the specified number of errors.
+The strict rules reject superglobal access and modification at every scope. The two root-scope fixtures below should report errors under the strict rules and no findings under the basic rules. The existing `access-superglobals.php` and `modify-superglobals.php` fixtures remain nested-scope checks because their superglobal expressions are inside `function test()`.
 
 ```bash
-# Expected: 9 errors (accessing any superglobal, even in root scope)
+# Expected: 9 errors (reading all nine superglobals at file scope)
+vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/access-superglobals-at-root-scope.php --level=0 --no-progress
+
+# Expected: no errors (the same root-scope reads are allowed by the basic rules)
+vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/access-superglobals-at-root-scope.php --level=0 --no-progress
+
+# Expected: 3 errors (root-scope $_GET read and $_SESSION read/write)
+vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/superglobals-root-scope-read-write.php --level=0 --no-progress
+
+# Expected: no errors (root-scope superglobal access and modification are allowed by the basic rules)
+vendor/bin/phpstan analyze -c config/rules.neon tests/Rules/Data/superglobals-root-scope-read-write.php --level=0 --no-progress
+
+# Expected: 9 errors (nested-scope coverage; all reads in this fixture are inside function test())
 vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/access-superglobals.php --level=0 --no-progress
 
-# Expected: 19 errors (modifying any superglobal, even in root scope)
+# Expected: 19 errors (nested-scope writes; all assignments in this fixture are inside function test())
 vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/modify-superglobals.php --level=0 --no-progress
 ```
 
@@ -149,13 +155,13 @@ vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/modify-s
 
 ```
 ------ -----------------------------------------------------------------------
-  Line   access-superglobals.php                                     
+  Line   access-superglobals-at-root-scope.php
  ------ -----------------------------------------------------------------------
-  5      Code is accessing superglobal variable $_GET. Use a wrapper service
-         instead.                                                    
+  3      Code is accessing superglobal variable $_GET. Pass the value as an
+         argument instead.
          🪪  access.superglobal                                      
-  6      Code is accessing superglobal variable $_POST. Use a wrapper service
-         instead.                                                    
+  4      Code is accessing superglobal variable $_POST. Pass the value as an
+         argument instead.
          🪪  access.superglobal                                      
  ------ -----------------------------------------------------------------------
 
@@ -215,7 +221,7 @@ vendor/bin/phpstan analyze -c config/rules.neon \
   tests/Rules/Data/modify-superglobals-in-nested-scope.php \
   --level=0 --no-progress
 
-# Expected: 28 errors total across all strict rule violations
+# Expected: 28 errors total across the strict nested-scope fixtures below
 vendor/bin/phpstan analyze -c config/rules-strict.neon \
   tests/Rules/Data/access-superglobals.php \
   tests/Rules/Data/modify-superglobals.php \
