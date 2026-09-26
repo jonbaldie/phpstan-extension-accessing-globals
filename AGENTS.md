@@ -173,7 +173,7 @@ vendor/bin/phpstan analyze -c config/rules-strict.neon tests/Rules/Data/modify-s
 # Expected: 3 errors (accessing global constants MY_CONSTANT, ANOTHER_CONSTANT)
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/using-global-constants.php --level=0 --no-progress
 
-# Expected: 2 errors (accessing static property Config::$value)
+# Expected: 2 errors (accessing static property StaticPropertyConfig::$value)
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon tests/Rules/Data/using-static-properties.php --level=0 --no-progress
 
 # Expected: 2 errors (accessing constants from external classes)
@@ -221,7 +221,7 @@ vendor/bin/phpstan analyze -c config/rules-strict.neon \
   tests/Rules/Data/modify-superglobals.php \
   --level=0 --no-progress
 
-# Expected: 13 errors total across all opinionated rule violations
+# Expected: 11 errors total across all opinionated rule violations
 vendor/bin/phpstan analyze -c config/rules-opinionated.neon \
   tests/Rules/Data/using-global-constants.php \
   tests/Rules/Data/using-static-properties.php \
