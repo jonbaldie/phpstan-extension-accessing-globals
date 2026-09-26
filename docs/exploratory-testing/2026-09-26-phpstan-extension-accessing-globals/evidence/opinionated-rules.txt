@@ -1,0 +1,84 @@
+Instructions for interpreting errors
+---------
+
+Each error has an associated identifier, like `argument.type`
+or `return.missing`.
+
+Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>
+This page contains code example, explanation why is this an error
+and instruction how to fix it.
+Before fixing the error, fetch the documentation page for its identifier.
+
+The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away.
+Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error.
+Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type.
+Do not add type casts just to silence errors.
+Do not widen parameter or return types just to make the error go away.
+ ------ ---------------------------------------------------------------------
+  Line   using-class-constants.php
+ ------ ---------------------------------------------------------------------
+  27     Code is accessing constant
+         AccessingGlobals\Tests\Rules\Data\AnotherConfig::RETRIES. This
+         creates a hidden dependency; pass the value as an argument instead.
+         🪪  constant.class
+  45     Access to undefined constant
+         AccessingGlobals\Tests\Rules\Data\Config::TIMEOUT.
+         🪪  classConstant.notFound
+  45     Code is accessing constant
+         AccessingGlobals\Tests\Rules\Data\Config::TIMEOUT. This creates a
+         hidden dependency; pass the value as an argument instead.
+         🪪  constant.class
+  50     Access to undefined constant
+         AccessingGlobals\Tests\Rules\Data\Config::TIMEOUT.
+         🪪  classConstant.notFound
+ ------ ---------------------------------------------------------------------
+
+ ------ ---------------------------------------------------------------------
+  Line   using-global-constants.php
+ ------ ---------------------------------------------------------------------
+  18     Code is accessing global constant "MY_CONSTANT". Pass it as an
+         argument instead to make the dependency explicit.
+         🪪  constant.global
+  19     Code is accessing global constant "ANOTHER_CONSTANT". Pass it as an
+         argument instead to make the dependency explicit.
+         🪪  constant.global
+  27     Code is accessing global constant "MY_CONSTANT". Pass it as an
+         argument instead to make the dependency explicit.
+         🪪  constant.global
+ ------ ---------------------------------------------------------------------
+
+ ------ -----------------------------------------------------------------------
+  Line   using-impure-functions.php
+ ------ -----------------------------------------------------------------------
+  12     Code is calling the impure function "time()". This creates a hidden
+         dependency on external state; pass the result as an argument instead.
+         🪪  function.impure
+  13     Code is calling the impure function "rand()". This creates a hidden
+         dependency on external state; pass the result as an argument instead.
+         🪪  function.impure
+  14     Code is calling the impure function "getenv()". This creates a hidden
+         dependency on external state; pass the result as an argument instead.
+         🪪  function.impure
+  23     Code is calling the impure function "file_get_contents()". This
+         creates a hidden dependency on external state; pass the result as an
+         argument instead.
+         🪪  function.impure
+ ------ -----------------------------------------------------------------------
+
+ ------ ---------------------------------------------------------------------
+  Line   using-static-properties.php
+ ------ ---------------------------------------------------------------------
+  16     Code is accessing static property
+         AccessingGlobals\Tests\Rules\Data\Config::$value. Static properties
+         are global state; pass the value as an argument instead.
+         🪪  property.static
+  26     Code is accessing static property
+         AccessingGlobals\Tests\Rules\Data\Config::$value. Static properties
+         are global state; pass the value as an argument instead.
+         🪪  property.static
+ ------ ---------------------------------------------------------------------
+
+ [ERROR] Found 13 errors
+
+
+exit_code=1

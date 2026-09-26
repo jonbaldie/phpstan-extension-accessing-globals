@@ -1,0 +1,13 @@
+PHPUnit 12.5.34 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.1
+Configuration: /Users/jonathanbaldie/Code-2/github.com/jonbaldie/phpstan-extension-accessing-globals/phpunit.xml
+
+...............................................................  63 / 109 ( 57%)
+..............................................                  109 / 109 (100%)
+
+Time: 01:03.590, Memory: 82.50 MB
+
+OK (109 tests, 230 assertions)
+
+exit_code=0

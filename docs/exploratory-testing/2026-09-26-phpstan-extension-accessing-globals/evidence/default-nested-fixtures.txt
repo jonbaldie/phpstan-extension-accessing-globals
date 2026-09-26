@@ -1,0 +1,114 @@
+Instructions for interpreting errors
+---------
+
+Each error has an associated identifier, like `argument.type`
+or `return.missing`.
+
+Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>
+This page contains code example, explanation why is this an error
+and instruction how to fix it.
+Before fixing the error, fetch the documentation page for its identifier.
+
+The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away.
+Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error.
+Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type.
+Do not add type casts just to silence errors.
+Do not widen parameter or return types just to make the error go away.
+ ------ -----------------------------------------------------------------------
+  Line   access-superglobals.php
+ ------ -----------------------------------------------------------------------
+  5      Code is accessing superglobal variable $_GET in a nested scope. Pass
+         the value as an argument instead.
+         🪪  access.superglobal.nested
+  6      Code is accessing superglobal variable $_POST in a nested scope. Pass
+         the value as an argument instead.
+         🪪  access.superglobal.nested
+  7      Code is accessing superglobal variable $_REQUEST in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  8      Code is accessing superglobal variable $_SESSION in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  9      Code is accessing superglobal variable $_COOKIE in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  10     Code is accessing superglobal variable $_FILES in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  11     Code is accessing superglobal variable $_ENV in a nested scope. Pass
+         the value as an argument instead.
+         🪪  access.superglobal.nested
+  12     Code is accessing superglobal variable $_SERVER in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  13     Code is accessing superglobal variable $GLOBALS in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+ ------ -----------------------------------------------------------------------
+
+ ------ -----------------------------------------------------------------------
+  Line   modify-superglobals.php
+ ------ -----------------------------------------------------------------------
+  5      Code is accessing superglobal variable $_GET in a nested scope. Pass
+         the value as an argument instead.
+         🪪  access.superglobal.nested
+  5      Code is modifying superglobal variable $_GET in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  6      Code is accessing superglobal variable $_POST in a nested scope. Pass
+         the value as an argument instead.
+         🪪  access.superglobal.nested
+  6      Code is modifying superglobal variable $_POST in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  7      Code is accessing superglobal variable $_REQUEST in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  7      Code is modifying superglobal variable $_REQUEST in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  8      Code is accessing superglobal variable $_SESSION in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  8      Code is modifying superglobal variable $_SESSION in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  9      Code is accessing superglobal variable $_COOKIE in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  9      Code is modifying superglobal variable $_COOKIE in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  10     Code is accessing superglobal variable $_FILES in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  10     Code is modifying superglobal variable $_FILES in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  11     Code is accessing superglobal variable $_ENV in a nested scope. Pass
+         the value as an argument instead.
+         🪪  access.superglobal.nested
+  11     Code is modifying superglobal variable $_ENV in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  12     Code is accessing superglobal variable $_SERVER in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  12     Code is modifying superglobal variable $_SERVER in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+  13     Code is accessing superglobal variable $GLOBALS in a nested scope.
+         Pass the value as an argument instead.
+         🪪  access.superglobal.nested
+  13     Code is modifying global variable through $GLOBALS['foo']. Use
+         dependency injection instead.
+         🪪  modify.global
+  13     Code is modifying superglobal variable $GLOBALS in a nested scope.
+         Return the new value instead.
+         🪪  modify.superglobal.nested
+ ------ -----------------------------------------------------------------------
+
+ [ERROR] Found 28 errors
+
+
+exit_code=1
