@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.2
+
+- Detect mutations through by-reference parameters with union, intersection, and DNF types (#86, #87)
+
 ## 0.6.1
 
 - Detect additional impure global functions and fix `get_current_user()` detection (#68)
