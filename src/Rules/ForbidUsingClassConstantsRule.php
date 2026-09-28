@@ -20,10 +20,13 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class ForbidUsingClassConstantsRule implements Rule
 {
+    private readonly ConstantAccessResolver $constantAccessResolver;
+
     public function __construct(
         private ReflectionProvider $reflectionProvider,
     )
     {
+        $this->constantAccessResolver = new ConstantAccessResolver($reflectionProvider);
     }
 
     public function getNodeType(): string
@@ -110,36 +113,16 @@ class ForbidUsingClassConstantsRule implements Rule
 
     private function processConstantFunctionCall(FuncCall $node, Scope $scope): array
     {
-        if (!$node->name instanceof Name) {
-            // Dynamic function calls like `$functionName()`.
+        $access = $this->constantAccessResolver->resolveConstantFunctionCall($node, $scope);
+
+        // Global and dynamic lookups are ForbidUsingGlobalConstantsRule's concern,
+        // so reporting them here would flag the same call twice.
+        if (!$access instanceof ClassConstantAccess) {
             return [];
         }
 
-        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($node->name, $scope);
-
-        if ($resolvedFunctionName === null || strtolower($resolvedFunctionName) !== 'constant') {
-            return [];
-        }
-
-        $args = $node->getArgs();
-
-        if (count($args) === 0) {
-            return [];
-        }
-
-        $constantNameArgument = $args[0]->value;
-
-        if (!$constantNameArgument instanceof Node\Scalar\String_) {
-            return [];
-        }
-
-        $constantString = $constantNameArgument->value;
-
-        if (!str_contains($constantString, '::')) {
-            return [];
-        }
-
-        [$className, $constantName] = explode('::', $constantString, 2);
+        $className = $access->className;
+        $constantName = $access->constantName;
 
         if ($className === '' || $constantName === '') {
             return [];
