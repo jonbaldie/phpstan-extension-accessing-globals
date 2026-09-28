@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-function constantAccessResolverLiterals(string $dynamic, string $functionName): void
+function constantAccessResolverLiterals(): void
 {
     constant('FOO');
 }

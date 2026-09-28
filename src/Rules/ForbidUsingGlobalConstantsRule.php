@@ -98,8 +98,8 @@ class ForbidUsingGlobalConstantsRule implements Rule
             ];
         }
 
-        // constant('Foo::BAR') reads a class constant (PHP 8.3+);
-        // ForbidUsingClassConstantsRule covers that case.
+        // Either not a builtin constant() call, or constant('Foo::BAR'), which
+        // reads a class constant (PHP 8.3+) that ForbidUsingClassConstantsRule covers.
         return [];
     }
 

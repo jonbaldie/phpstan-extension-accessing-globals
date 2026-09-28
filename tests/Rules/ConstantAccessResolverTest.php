@@ -84,7 +84,7 @@ class ConstantAccessResolverTest extends RuleTestCase
     {
         // RuleTestCase analyzes fixtures in isolation, so load the declaration
         // first for ReflectionProvider to resolve the function as the CLI does.
-        require_once __DIR__ . '/Data/ConstantAccessResolver/namespaced.php';
+        require_once __DIR__ . "/Data/ConstantAccessResolver/namespaced.php";
 
         $this->analyse(
             [__DIR__ . '/Data/ConstantAccessResolver/namespaced.php'],
