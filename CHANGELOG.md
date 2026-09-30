@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.3
+
+- Resolve builtin `constant()` calls once for both global and class constant rules (#84)
+
 ## 0.6.2
 
 - Detect mutations through by-reference parameters with union, intersection, and DNF types (#86, #87)
