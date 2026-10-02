@@ -504,5 +504,31 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
             ),
         );
     }
-}
 
+    public function testIssue99CatchVariableTargetsOnlyInNestedScope(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-99-catch-variable-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_GET in a nested scope. Return the new value instead.',
+                    24,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS in a nested scope. Return the new value instead.',
+                    32,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 2, 'modify.superglobal.nested'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+}

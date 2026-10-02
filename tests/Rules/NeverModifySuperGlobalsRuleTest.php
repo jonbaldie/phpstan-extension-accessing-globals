@@ -595,6 +595,35 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue99CatchVariableTargets(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-99-catch-variable-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying superglobal variable $_GET. Return the new value instead.',
+                    24,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    32,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 3, 'modify.superglobal'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }
-
-
