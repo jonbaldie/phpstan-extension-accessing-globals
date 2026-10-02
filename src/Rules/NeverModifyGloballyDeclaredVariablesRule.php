@@ -316,14 +316,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     $this->scope = NeverModifyGloballyDeclaredVariablesRule::assignCaughtVariable($node, $this->scope);
                 }
 
-                // PHPStan's own walk rewrites `$obj?->method()` into a
-                // MethodCall before rules see it; this traversal sees the raw
-                // node, so apply the same rewrite for by-reference arguments.
-                $mutationNode = $node instanceof Node\Expr\NullsafeMethodCall
-                    ? new Node\Expr\MethodCall($node->var, $node->name, $node->args, $node->getAttributes())
-                    : $node;
-
-                foreach ($this->mutationTargetResolver->resolve($mutationNode, $this->scope) as $target) {
+                foreach ($this->mutationTargetResolver->resolve($node, $this->scope) as $target) {
                     // `unset($db)` removes the local binding created by
                     // `global $db`; it does not remove the global variable.
                     if (

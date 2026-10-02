@@ -1,5 +1,7 @@
 services:
     -
+        class: AccessingGlobals\Rules\ByRefArgumentResolver
+    -
         class: AccessingGlobals\Rules\MutationTargetResolver
     -
         class: AccessingGlobals\Rules\NeverAccessGlobalsRule
