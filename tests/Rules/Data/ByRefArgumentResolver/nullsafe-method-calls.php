@@ -16,4 +16,6 @@ function nullsafeMethodCalls(?NullsafeMutator $mutator, NullsafeMutator $present
     $mutator?->mutate($a, $b);
     $present?->mutate(value: $a, target: $b);
     $mutator?->mutate($a, $b)?->undefinedMethod($b);
+    $present->mutate($a, $b);
+    $present->mutate(value: $a, target: $b);
 }

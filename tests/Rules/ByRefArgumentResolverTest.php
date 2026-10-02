@@ -8,6 +8,11 @@ use AccessingGlobals\Rules\ByRefArgumentResolver;
 use PhpParser\Node;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\FunctionReflection;
+use PHPStan\Reflection\ParameterReflection;
+use PHPStan\Reflection\ParametersAcceptor;
+use PHPStan\Reflection\PassedByReference;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Testing\RuleTestCase;
@@ -90,7 +95,7 @@ class ByRefArgumentResolverTest extends RuleTestCase
         );
     }
 
-    public function testNullsafeMethodCallsResolveOnceOnTheNullsafeNode(): void
+    public function testNullsafeMethodCallsResolveOnceLikeTheirMethodCallTwins(): void
     {
         require_once __DIR__ . '/Data/ByRefArgumentResolver/nullsafe-method-calls.php';
 
@@ -100,7 +105,61 @@ class ByRefArgumentResolverTest extends RuleTestCase
                 ['NullsafeMethodCall by-ref $a', 16],
                 ['NullsafeMethodCall by-ref $b', 17],
                 ['NullsafeMethodCall by-ref $a', 18],
+                ['MethodCall by-ref $a', 19],
+                ['MethodCall by-ref $b', 20],
             ],
         );
+    }
+
+    /**
+     * No builtin PHPStan loads here has several variants with by-reference
+     * parameters, and union receivers merge into one variant, so the variants
+     * are supplied through the resolver's ReflectionProvider boundary.
+     */
+    public function testByReferenceArgumentsAreCollectedOnceAcrossVariants(): void
+    {
+        $function = self::createStub(FunctionReflection::class);
+        $function->method('getName')->willReturn('overloaded');
+        $function->method('getVariants')->willReturn([
+            self::variant(['first' => true, 'second' => false]),
+            self::variant(['first' => true, 'second' => true]),
+        ]);
+
+        $reflectionProvider = self::createStub(ReflectionProvider::class);
+        $reflectionProvider->method('hasFunction')->willReturn(true);
+        $reflectionProvider->method('getFunction')->willReturn($function);
+
+        $first = new Node\Expr\Variable('first');
+        $second = new Node\Expr\Variable('second');
+        $call = new Node\Expr\FuncCall(
+            new Node\Name('overloaded'),
+            [new Node\Arg($first), new Node\Arg($second)],
+        );
+
+        $resolver = new ByRefArgumentResolver($reflectionProvider);
+
+        self::assertSame([$first, $second], $resolver->resolve($call, self::createStub(Scope::class)));
+    }
+
+    /**
+     * @param array<string, bool> $byReferenceByName
+     */
+    private static function variant(array $byReferenceByName): ParametersAcceptor
+    {
+        $parameters = [];
+        foreach ($byReferenceByName as $name => $byReference) {
+            $parameter = self::createStub(ParameterReflection::class);
+            $parameter->method('getName')->willReturn($name);
+            $parameter->method('passedByReference')->willReturn(
+                $byReference ? PassedByReference::createReadsArgument() : PassedByReference::createNo(),
+            );
+            $parameters[] = $parameter;
+        }
+
+        $variant = self::createStub(ParametersAcceptor::class);
+        $variant->method('getParameters')->willReturn($parameters);
+        $variant->method('isVariadic')->willReturn(false);
+
+        return $variant;
     }
 }
