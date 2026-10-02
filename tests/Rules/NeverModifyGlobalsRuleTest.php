@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\ByRefArgumentResolver;
 use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifyGlobalsRule;
 use PHPStan\Rules\Rule;
@@ -17,7 +18,7 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
     protected function getRule(): Rule
     {
         return new NeverModifyGlobalsRule(
-            new MutationTargetResolver(self::createReflectionProvider()),
+            new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
         );
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\ByRefArgumentResolver;
 use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifySuperGlobalsRule;
 use PHPStan\Rules\Rule;
@@ -17,7 +18,7 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
     protected function getRule(): Rule
     {
         return new NeverModifySuperGlobalsRule(
-            new MutationTargetResolver(self::createReflectionProvider()),
+            new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
         );
     }
 
@@ -624,6 +625,21 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),
             ),
+        );
+    }
+
+    public function testIssue98NullsafeMethodByReferenceReportedOnce(): void
+    {
+        require_once __DIR__ . "/Data/issue-98-nullsafe-superglobal-by-reference.php";
+
+        $this->analyse(
+            [__DIR__ . "/Data/issue-98-nullsafe-superglobal-by-reference.php"],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    16,
+                ],
+            ],
         );
     }
 }

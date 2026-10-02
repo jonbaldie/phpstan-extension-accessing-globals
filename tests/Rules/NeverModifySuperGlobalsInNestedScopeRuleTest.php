@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Tests\Rules;
 
+use AccessingGlobals\Rules\ByRefArgumentResolver;
 use AccessingGlobals\Rules\MutationTargetResolver;
 use AccessingGlobals\Rules\NeverModifySuperGlobalsInNestedScopeRule;
 use PHPStan\Rules\Rule;
@@ -17,7 +18,7 @@ class NeverModifySuperGlobalsInNestedScopeRuleTest extends RuleTestCase
     protected function getRule(): Rule
     {
         return new NeverModifySuperGlobalsInNestedScopeRule(
-            new MutationTargetResolver(self::createReflectionProvider()),
+            new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
         );
     }
 
