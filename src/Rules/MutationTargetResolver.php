@@ -46,6 +46,13 @@ final class MutationTargetResolver
                 // mutation target.
                 $targets[] = $node->expr;
             }
+        } elseif ($node instanceof Node\Stmt\Catch_) {
+            // `catch (\Exception $e)` assigns the caught exception to $e.
+            // Since PHP 8.0 the variable is optional.
+            if ($node->var === null) {
+                return [];
+            }
+            $targets = [$node->var];
         } elseif ($node instanceof Node\Expr\FuncCall) {
             return $this->resolveFuncCall($node, $scope);
         } elseif ($node instanceof Node\Expr\MethodCall) {

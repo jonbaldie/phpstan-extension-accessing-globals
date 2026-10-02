@@ -603,5 +603,27 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
-}
 
+    public function testIssue99CatchVariableTargetGlobalBinding(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-99-catch-variable-targets.php";
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying variable $error that was declared with the "global" keyword. Use dependency injection instead.',
+                    16,
+                ],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 1, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+}

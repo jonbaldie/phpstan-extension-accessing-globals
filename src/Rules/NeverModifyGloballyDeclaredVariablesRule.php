@@ -11,6 +11,8 @@ use PhpParser\NodeVisitorAbstract;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
+use PHPStan\Type\ObjectType;
+use PHPStan\Type\TypeCombinator;
 
 /**
  * Detects modifications to variables that were declared with the global keyword.
@@ -55,6 +57,35 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         $this->findAssignmentsToGlobals($node, $scope, $globalVars, $errors, $this->mutationTargetResolver);
 
         return $errors;
+    }
+
+    /**
+     * `catch (\Exception $e)` rebinds $e to the caught exception, so a value
+     * tracked for $e (e.g. a string later used as `$$e`) no longer applies.
+     *
+     * @internal
+     */
+    public static function assignCaughtVariable(Node\Stmt\Catch_ $node, Scope $scope): Scope
+    {
+        if (
+            !$scope instanceof \PHPStan\Analyser\MutatingScope
+            || $node->var === null
+            || !is_string($node->var->name)
+        ) {
+            return $scope;
+        }
+
+        $caughtType = TypeCombinator::union(...array_map(
+            static fn(Node\Name $type): ObjectType => new ObjectType($scope->resolveName($type)),
+            $node->types,
+        ));
+
+        return $scope->assignVariable(
+            $node->var->name,
+            $caughtType,
+            $caughtType,
+            \PHPStan\TrinaryLogic::createYes(),
+        );
     }
 
     /**
@@ -105,6 +136,10 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         $assignedType,
                         \PHPStan\TrinaryLogic::createYes(),
                     );
+                }
+
+                if ($node instanceof Node\Stmt\Catch_) {
+                    $this->scope = NeverModifyGloballyDeclaredVariablesRule::assignCaughtVariable($node, $this->scope);
                 }
 
                 if ($node instanceof Node\Stmt\Global_) {
@@ -233,6 +268,10 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     if ($node instanceof Node\Expr\Assign) {
                         $this->trackAliases($node);
                     }
+                }
+
+                if ($node instanceof Node\Stmt\Catch_) {
+                    $this->scope = NeverModifyGloballyDeclaredVariablesRule::assignCaughtVariable($node, $this->scope);
                 }
 
                 // PHPStan's own walk rewrites `$obj?->method()` into a
