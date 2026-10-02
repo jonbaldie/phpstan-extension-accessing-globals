@@ -9,9 +9,11 @@ use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitorAbstract;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 
 /**
@@ -29,6 +31,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
 {
     public function __construct(
         private readonly MutationTargetResolver $mutationTargetResolver,
+        private readonly ReflectionProvider $reflectionProvider,
     ) {
     }
 
@@ -158,6 +161,40 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
     }
 
     /**
+     * Parameter types as PHPStan's reflection resolves them, including PHPDoc
+     * `@param` tags. The rule's scope sits outside the function, so these are
+     * not registered on it yet. Closures and arrow functions have no
+     * reflection to consult and yield no types.
+     *
+     * @return array<string, Type>
+     */
+    private function reflectedParameterTypes(Node\FunctionLike $function, Scope $scope): array
+    {
+        $variants = [];
+        if ($function instanceof Node\Stmt\Function_ && $function->namespacedName !== null) {
+            if ($this->reflectionProvider->hasFunction($function->namespacedName, null)) {
+                $variants = $this->reflectionProvider->getFunction($function->namespacedName, null)->getVariants();
+            }
+        } elseif ($function instanceof Node\Stmt\ClassMethod) {
+            $classReflection = $scope->getClassReflection();
+            if ($classReflection !== null && $classReflection->hasNativeMethod($function->name->toString())) {
+                $variants = $classReflection->getNativeMethod($function->name->toString())->getVariants();
+            }
+        }
+
+        if (count($variants) !== 1) {
+            return [];
+        }
+
+        $types = [];
+        foreach ($variants[0]->getParameters() as $parameter) {
+            $types[$parameter->getName()] = $parameter->getType();
+        }
+
+        return $types;
+    }
+
+    /**
      * Traverse the function to find mutations of globally declared variables.
      *
      * @param Node\FunctionLike $function
@@ -172,6 +209,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         MutationTargetResolver $mutationTargetResolver,
     ): void {
         if ($scope instanceof \PHPStan\Analyser\MutatingScope) {
+            $reflectedTypes = $this->reflectedParameterTypes($function, $scope);
             foreach ($function->getParams() as $param) {
                 if (
                     $param->var instanceof Node\Expr\Variable
@@ -182,6 +220,10 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         $isNullable = $param->default instanceof Node\Expr\ConstFetch
                             && strtolower((string) $param->default->name) === 'null';
                         $paramType = $scope->getFunctionType($param->type, $isNullable, $param->variadic);
+                    } else {
+                        // Without a native type, fall back to the reflected
+                        // type, which includes a PHPDoc `@param` tag.
+                        $paramType = $reflectedTypes[$param->var->name] ?? null;
                     }
 
                     if ($paramType !== null) {

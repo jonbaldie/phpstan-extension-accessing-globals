@@ -18,6 +18,7 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
     {
         return new NeverModifyGloballyDeclaredVariablesRule(
             new MutationTargetResolver(self::createReflectionProvider()),
+            self::createReflectionProvider(),
         );
     }
 
@@ -620,6 +621,35 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
 
         $this->assertSame(
             array_fill(0, 1, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
+
+    public function testIssue100PhpDocParamByReference(): void
+    {
+        // https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/100
+        // A parameter typed only by a PHPDoc @param tag must still resolve to
+        // its documented type, so by-reference method arguments are found.
+        require_once __DIR__ . "/Data/issue-100-phpdoc-param-by-reference.php";
+        $fixture = __DIR__ . "/Data/issue-100-phpdoc-param-by-reference.php";
+
+        $message = 'Code is modifying variable $appState that was declared with the "global" keyword. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [$message, 18],
+                [$message, 27],
+                [$message, 36],
+                [$message, 47],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 4, 'modify.global'),
             array_map(
                 static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
                 $this->gatherAnalyserErrors([$fixture]),
