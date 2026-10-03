@@ -1,0 +1,11 @@
+ ------ ----------------------------------------------------------------------- 
+  Line   property-hooks-test.php                                                
+ ------ ----------------------------------------------------------------------- 
+  11     Code is calling the impure function "time()". This creates a hidden    
+         dependency on external state; pass the result as an argument instead.  
+         🪪  function.impure                                                    
+ ------ ----------------------------------------------------------------------- 
+
+
+ [ERROR] Found 1 error                                                          
+

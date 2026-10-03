@@ -1,0 +1,38 @@
+ ------ ----------------------------------------------------------------------- 
+  Line   invokable-mutation-reproducer.php                                      
+ ------ ----------------------------------------------------------------------- 
+  21     Code is accessing global variable $appState. Use dependency injection  
+         instead.                                                               
+         🪪  access.global                                                      
+  27     Code is accessing superglobal variable $_SESSION in a nested scope.    
+         Pass the value as an argument instead.                                 
+         🪪  access.superglobal.nested                                          
+  30     Code is accessing superglobal variable $GLOBALS in a nested scope.     
+         Pass the value as an argument instead.                                 
+         🪪  access.superglobal.nested                                          
+  35     Code is accessing global variable $appState. Use dependency injection  
+         instead.                                                               
+         🪪  access.global                                                      
+  38     Code is modifying variable $appState that was declared with the        
+         "global" keyword. Use dependency injection instead.                    
+         🪪  modify.global                                                      
+  41     Code is accessing superglobal variable $_SESSION in a nested scope.    
+         Pass the value as an argument instead.                                 
+         🪪  access.superglobal.nested                                          
+  41     Code is modifying superglobal variable $_SESSION in a nested scope.    
+         Return the new value instead.                                          
+         🪪  modify.superglobal.nested                                          
+  44     Code is accessing superglobal variable $GLOBALS in a nested scope.     
+         Pass the value as an argument instead.                                 
+         🪪  access.superglobal.nested                                          
+  44     Code is modifying global variable through $GLOBALS['config']. Use      
+         dependency injection instead.                                          
+         🪪  modify.global                                                      
+  44     Code is modifying superglobal variable $GLOBALS in a nested scope.     
+         Return the new value instead.                                          
+         🪪  modify.superglobal.nested                                          
+ ------ ----------------------------------------------------------------------- 
+
+
+ [ERROR] Found 10 errors                                                        
+
