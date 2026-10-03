@@ -346,5 +346,19 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
             ),
         );
     }
-}
 
+    public function testIssue104InvokableObjectByReferenceIsAMutation(): void
+    {
+        require_once __DIR__ . "/Data/issue-104-invokable-object-by-reference.php";
+
+        $this->analyse(
+            [__DIR__ . "/Data/issue-104-invokable-object-by-reference.php"],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'config\']. Use dependency injection instead.',
+                    20,
+                ],
+            ],
+        );
+    }
+}

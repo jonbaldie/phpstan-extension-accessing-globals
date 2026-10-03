@@ -60,7 +60,7 @@ final class ByRefArgumentResolver
     private function resolveFuncCall(Node\Expr\FuncCall $node, Scope $scope): array
     {
         if (!$node->name instanceof Node\Name) {
-            return [];
+            return $this->resolveCallableExpressionCall($node->name, $node->getArgs(), $scope);
         }
 
         if (!$this->reflectionProvider->hasFunction($node->name, $scope)) {
@@ -74,6 +74,23 @@ final class ByRefArgumentResolver
         }
 
         return $this->resolveByReferenceArguments($function->getVariants(), $node->getArgs());
+    }
+
+    /**
+     * Resolves `$callee(...)`, where the callee is an expression such as an
+     * invokable object, a closure or a callable string.
+     *
+     * @param list<Node\Arg> $args
+     * @return list<Node\Expr>
+     */
+    private function resolveCallableExpressionCall(Node\Expr $callee, array $args, Scope $scope): array
+    {
+        $calleeType = $scope->getType($callee);
+        if (!$calleeType->isCallable()->yes()) {
+            return [];
+        }
+
+        return $this->resolveByReferenceArguments($calleeType->getCallableParametersAcceptors($scope), $args);
     }
 
     /**
