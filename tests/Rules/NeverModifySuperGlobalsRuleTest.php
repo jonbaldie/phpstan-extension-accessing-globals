@@ -642,4 +642,23 @@ class NeverModifySuperGlobalsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue104InvokableObjectByReferenceIsAMutation(): void
+    {
+        require_once __DIR__ . "/Data/issue-104-invokable-object-by-reference.php";
+
+        $this->analyse(
+            [__DIR__ . "/Data/issue-104-invokable-object-by-reference.php"],
+            [
+                [
+                    'Code is modifying superglobal variable $_SESSION. Return the new value instead.',
+                    19,
+                ],
+                [
+                    'Code is modifying superglobal variable $GLOBALS. Return the new value instead.',
+                    20,
+                ],
+            ],
+        );
+    }
 }

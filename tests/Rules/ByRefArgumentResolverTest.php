@@ -95,6 +95,22 @@ class ByRefArgumentResolverTest extends RuleTestCase
         );
     }
 
+    public function testCallsThroughCallableExpressionsResolveTheCalleeSignature(): void
+    {
+        require_once __DIR__ . '/Data/ByRefArgumentResolver/callable-expression-calls.php';
+
+        $this->analyse(
+            [__DIR__ . '/Data/ByRefArgumentResolver/callable-expression-calls.php'],
+            [
+                ['FuncCall by-ref $a', 27],
+                ['FuncCall by-ref $b', 28],
+                ['FuncCall by-ref $b', 30],
+                ['FuncCall by-ref $b', 33],
+                ['FuncCall by-ref $a', 35],
+            ],
+        );
+    }
+
     public function testNullsafeMethodCallsResolveOnceLikeTheirMethodCallTwins(): void
     {
         require_once __DIR__ . '/Data/ByRefArgumentResolver/nullsafe-method-calls.php';
