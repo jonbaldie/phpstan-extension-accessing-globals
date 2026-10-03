@@ -1,0 +1,35 @@
+ ------ ----------------------------------------------------------------------- 
+  Line   match-and-destructuring-test.php                                       
+ ------ ----------------------------------------------------------------------- 
+  9      Code is accessing global variable $count. Use dependency injection     
+         instead.                                                               
+         🪪  access.global                                                      
+  12     Code is accessing superglobal variable $_SESSION in a nested scope.    
+         Pass the value as an argument instead.                                 
+         🪪  access.superglobal.nested                                          
+  13     Code is accessing superglobal variable $_SESSION in a nested scope.    
+         Pass the value as an argument instead.                                 
+         🪪  access.superglobal.nested                                          
+  13     Code is modifying superglobal variable $_SESSION in a nested scope.    
+         Return the new value instead.                                          
+         🪪  modify.superglobal.nested                                          
+  14     Code is modifying variable $count that was declared with the "global"  
+         keyword. Use dependency injection instead.                             
+         🪪  modify.global                                                      
+  21     Code is accessing global variable $a. Use dependency injection         
+         instead.                                                               
+         🪪  access.global                                                      
+  21     Code is accessing global variable $b. Use dependency injection         
+         instead.                                                               
+         🪪  access.global                                                      
+  23     Code is modifying variable $a that was declared with the "global"      
+         keyword. Use dependency injection instead.                             
+         🪪  modify.global                                                      
+  23     Code is modifying variable $b that was declared with the "global"      
+         keyword. Use dependency injection instead.                             
+         🪪  modify.global                                                      
+ ------ ----------------------------------------------------------------------- 
+
+
+ [ERROR] Found 9 errors                                                         
+

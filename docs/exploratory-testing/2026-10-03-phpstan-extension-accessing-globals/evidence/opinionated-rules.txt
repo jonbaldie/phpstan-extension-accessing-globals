@@ -1,0 +1,62 @@
+ ------ --------------------------------------------------------------------- 
+  Line   using-class-constants.php                                            
+ ------ --------------------------------------------------------------------- 
+  27     Code is accessing constant                                           
+         AccessingGlobals\Tests\Rules\Data\AnotherConfig::RETRIES. This       
+         creates a hidden dependency; pass the value as an argument instead.  
+         🪪  constant.class                                                   
+  45     Code is accessing constant                                           
+         AccessingGlobals\Tests\Rules\Data\Config::TIMEOUT. This creates a    
+         hidden dependency; pass the value as an argument instead.            
+         🪪  constant.class                                                   
+ ------ --------------------------------------------------------------------- 
+
+ ------ --------------------------------------------------------------------- 
+  Line   using-global-constants.php                                           
+ ------ --------------------------------------------------------------------- 
+  18     Code is accessing global constant "MY_CONSTANT". Pass it as an       
+         argument instead to make the dependency explicit.                    
+         🪪  constant.global                                                  
+  19     Code is accessing global constant "ANOTHER_CONSTANT". Pass it as an  
+         argument instead to make the dependency explicit.                    
+         🪪  constant.global                                                  
+  27     Code is accessing global constant "MY_CONSTANT". Pass it as an       
+         argument instead to make the dependency explicit.                    
+         🪪  constant.global                                                  
+ ------ --------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   using-impure-functions.php                                             
+ ------ ----------------------------------------------------------------------- 
+  12     Code is calling the impure function "time()". This creates a hidden    
+         dependency on external state; pass the result as an argument instead.  
+         🪪  function.impure                                                    
+  13     Code is calling the impure function "rand()". This creates a hidden    
+         dependency on external state; pass the result as an argument instead.  
+         🪪  function.impure                                                    
+  14     Code is calling the impure function "getenv()". This creates a hidden  
+         dependency on external state; pass the result as an argument instead.  
+         🪪  function.impure                                                    
+  23     Code is calling the impure function "file_get_contents()". This        
+         creates a hidden dependency on external state; pass the result as an   
+         argument instead.                                                      
+         🪪  function.impure                                                    
+ ------ ----------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------------- 
+  Line   using-static-properties.php                                        
+ ------ ------------------------------------------------------------------- 
+  16     Code is accessing static property                                  
+         AccessingGlobals\Tests\Rules\Data\StaticPropertyConfig::$value.    
+         Static properties are global state; pass the value as an argument  
+         instead.                                                           
+         🪪  property.static                                                
+  26     Code is accessing static property                                  
+         AccessingGlobals\Tests\Rules\Data\StaticPropertyConfig::$value.    
+         Static properties are global state; pass the value as an argument  
+         instead.                                                           
+         🪪  property.static                                                
+ ------ ------------------------------------------------------------------- 
+
+ [ERROR] Found 11 errors                                                        
+
