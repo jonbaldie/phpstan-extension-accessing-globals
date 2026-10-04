@@ -1,25 +1,25 @@
 services:
-    -
+    accessingGlobals.ByRefArgumentResolver:
         class: AccessingGlobals\Rules\ByRefArgumentResolver
-    -
+    accessingGlobals.MutationTargetResolver:
         class: AccessingGlobals\Rules\MutationTargetResolver
-    -
+    accessingGlobals.NeverAccessGlobalsRule:
         class: AccessingGlobals\Rules\NeverAccessGlobalsRule
         tags:
             - phpstan.rules.rule
-    -
+    accessingGlobals.NeverModifyGlobalsRule:
         class: AccessingGlobals\Rules\NeverModifyGlobalsRule
         tags:
             - phpstan.rules.rule
-    -
+    accessingGlobals.NeverModifyGloballyDeclaredVariablesRule:
         class: AccessingGlobals\Rules\NeverModifyGloballyDeclaredVariablesRule
         tags:
             - phpstan.rules.rule
-    -
+    accessingGlobals.NeverAccessSuperGlobalsRule:
         class: AccessingGlobals\Rules\NeverAccessSuperGlobalsRule
         tags:
             - phpstan.rules.rule
-    -
+    accessingGlobals.NeverModifySuperGlobalsRule:
         class: AccessingGlobals\Rules\NeverModifySuperGlobalsRule
         tags:
             - phpstan.rules.rule

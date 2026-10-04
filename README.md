@@ -58,12 +58,33 @@ This enables the following rules:
 
 This configuration is for projects that want to enforce the highest level of strictness. It completely forbids any interaction with global or superglobal variables anywhere in your codebase.
 
-To enable the strict rules, include `rules-strict.neon` instead:
+To enable the strict rules, include `rules-strict.neon`:
 
 ```neon
 includes:
     - vendor/jonbaldie/phpstan-extension-accessing-globals/config/rules-strict.neon
 ```
+
+If you use `phpstan/extension-installer`, it also loads this package's default `rules.neon` automatically. To use only the strict rules, tell the installer to ignore this package in your root `composer.json`, then include `rules-strict.neon` yourself:
+
+```json
+{
+  "extra": {
+    "phpstan/extension-installer": {
+      "ignore": [
+        "jonbaldie/phpstan-extension-accessing-globals"
+      ]
+    }
+  }
+}
+```
+
+```neon
+includes:
+    - vendor/jonbaldie/phpstan-extension-accessing-globals/config/rules-strict.neon
+```
+
+If both rulesets are loaded, PHPStan accepts the configuration, but both pairs of superglobal rules are enabled: the nested-scope rules from `rules.neon` and the all-scope rules from `rules-strict.neon`. Use the installer `ignore` setting above when you want strict-only behavior.
 
 This enables the following rules:
 - `neverAccessGlobals`
