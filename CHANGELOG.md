@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.4
+
+- Detect global mutations through catch variables and by-reference PHPDoc parameter types (#99, #100)
+- Detect mutations through callable-expression calls, including invokable objects (#104)
+- Allow the basic and strict rulesets to compose (#108)
+
 ## 0.6.3
 
 - Resolve builtin `constant()` calls once for both global and class constant rules (#84)
