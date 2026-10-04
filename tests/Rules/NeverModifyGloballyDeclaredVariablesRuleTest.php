@@ -657,4 +657,19 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             ),
         );
     }
+
+    public function testIssue104InvokableObjectByReferenceIsAMutation(): void
+    {
+        require_once __DIR__ . "/Data/issue-104-invokable-object-by-reference.php";
+
+        $this->analyse(
+            [__DIR__ . "/Data/issue-104-invokable-object-by-reference.php"],
+            [
+                [
+                    'Code is modifying variable $appState that was declared with the "global" keyword. Use dependency injection instead.',
+                    18,
+                ],
+            ],
+        );
+    }
 }
