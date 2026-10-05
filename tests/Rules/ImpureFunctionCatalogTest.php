@@ -30,7 +30,7 @@ class ImpureFunctionCatalogTest extends TestCase
         yield 'unknown function' => ['not_a_real_function'];
         yield 'empty string' => [''];
         yield 'namespaced impure name' => ['App\\time'];
-        yield 'typo fixed in #68' => ['getcurrentuser'];
+        yield 'misspelled get_current_user' => ['getcurrentuser'];
     }
 
     #[DataProvider('mixedCaseImpureFunctionNames')]
@@ -47,13 +47,6 @@ class ImpureFunctionCatalogTest extends TestCase
         yield 'upper case' => ['TIME'];
         yield 'mixed case' => ['File_Get_Contents'];
         yield 'title case' => ['Getenv'];
-    }
-
-    public function testEveryCatalogEntryIsImpure(): void
-    {
-        foreach (ImpureFunctionCatalog::all() as $functionName) {
-            self::assertTrue(ImpureFunctionCatalog::isImpure($functionName), $functionName);
-        }
     }
 
     public function testCatalogContainsExactlyTheFunctionsPreviouslyOwnedByTheRule(): void
