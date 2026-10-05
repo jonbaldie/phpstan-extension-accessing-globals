@@ -18,156 +18,10 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class ForbidImpureGlobalFunctionsRule implements Rule
 {
-    /**
-     * @var array<string, bool>
-     */
-    private array $impureFunctions;
-
     public function __construct(
         private ReflectionProvider $reflectionProvider,
     )
     {
-        // A list of common PHP functions that are "impure" because they
-        // depend on external state (e.g., system clock, environment, filesystem).
-        $functions = [
-            // Time related
-            'time',
-            'microtime',
-            'date',
-            'gmdate',
-            'getdate',
-            'hrtime',
-            'gettimeofday',
-            'strtotime',
-            'mktime',
-            'gmmktime',
-            'date_sunrise',
-            'date_sunset',
-            'date_default_timezone_get',
-            'date_default_timezone_set',
-
-            // Randomness related
-            'rand',
-            'mt_rand',
-            'random_int',
-            'random_bytes',
-            'uniqid',
-            'shuffle',
-            'array_rand',
-            'str_shuffle',
-
-            // Environment related
-            'getenv',
-            'putenv',
-            'apache_getenv',
-            'getallheaders',
-            'php_uname',
-            'php_sapi_name',
-            'phpversion',
-            'php_ini_loaded_file',
-            'php_ini_scanned_files',
-            'sys_getloadavg',
-            'getrusage',
-            'getcwd',
-            'gethostname',
-            'getmypid',
-            'getmyuid',
-            'getmygid',
-            'getmyinode',
-            'get_current_user',
-            'disk_free_space',
-            'disk_total_space',
-            'error_get_last',
-            'error_reporting',
-            'ini_get',
-            'ini_get_all',
-            'ini_set',
-            'get_include_path',
-            'set_include_path',
-            'connection_status',
-            'connection_aborted',
-            'ignore_user_abort',
-
-            // Filesystem/Network related
-            'file_get_contents',
-            'file_put_contents',
-            'fopen',
-            'fread',
-            'fwrite',
-            'fgets',
-            'fgetc',
-            'fgetcsv',
-            'flock',
-            'readfile',
-            'move_uploaded_file',
-            'glob',
-            'scandir',
-            'opendir',
-            'readdir',
-            'stat',
-            'lstat',
-            'realpath',
-            'file',
-            'file_exists',
-            'fileatime',
-            'filectime',
-            'fileinode',
-            'filemtime',
-            'fileowner',
-            'filegroup',
-            'fileperms',
-            'filesize',
-            'filetype',
-            'is_dir',
-            'is_executable',
-            'is_file',
-            'is_link',
-            'is_readable',
-            'is_writable',
-            'is_writeable',
-            'touch',
-            'unlink',
-            'mkdir',
-            'rmdir',
-            'chmod',
-            'chown',
-            'chgrp',
-            'copy',
-            'rename',
-            'fsockopen',
-            'pfsockopen',
-            'readline',
-            'tempnam',
-            'tmpfile',
-            'sys_get_temp_dir',
-
-            // Output/Header related
-            'header',
-            'setcookie',
-            'error_log',
-            'mail',
-            'syslog',
-            'setlocale',
-            'localeconv',
-            'session_start',
-            'session_id',
-            'session_status',
-            'session_name',
-            'session_regenerate_id',
-            'session_destroy',
-            'session_unset',
-            'register_shutdown_function',
-            'register_tick_function',
-
-            // Process execution
-            'exec',
-            'shell_exec',
-            'passthru',
-            'system',
-            'proc_open',
-        ];
-
-        $this->impureFunctions = array_flip($functions);
     }
 
     public function getNodeType(): string
@@ -207,9 +61,7 @@ class ForbidImpureGlobalFunctionsRule implements Rule
             return [];
         }
 
-        $functionName = strtolower($resolvedFunctionName);
-
-        if (isset($this->impureFunctions[$functionName])) {
+        if (ImpureFunctionCatalog::isImpure($resolvedFunctionName)) {
             return [
                 RuleErrorBuilder::message(
                     sprintf(
