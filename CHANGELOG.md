@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.5
+
+- Extract the impure function catalog into a dedicated class (#97)
+
 ## 0.6.4
 
 - Detect global mutations through catch variables and by-reference PHPDoc parameter types (#99, #100)
