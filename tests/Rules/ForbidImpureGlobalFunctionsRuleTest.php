@@ -72,6 +72,21 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue115CallableStringCallsResolveAndUnknownCallsStaySilent(): void
+    {
+        require_once __DIR__ . "/Data/issue-115-impure-callable-expressions.php";
+
+        $this->analyse(
+            [__DIR__ . "/Data/issue-115-impure-callable-expressions.php"],
+            [
+                [
+                    'Code is calling the impure function "time()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    17,
+                ],
+            ],
+        );
+    }
+
     public function testIssue45FirstClassCallables(): void
     {
         $this->analyse(

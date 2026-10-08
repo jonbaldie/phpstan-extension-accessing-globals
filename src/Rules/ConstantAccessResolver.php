@@ -6,32 +6,35 @@ namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Node\FunctionCallableNode;
 use PHPStan\Reflection\ReflectionProvider;
 
 final class ConstantAccessResolver
 {
-    public function __construct(
-        private readonly ReflectionProvider $reflectionProvider,
-    ) {
+    private readonly CalleeResolver $calleeResolver;
+
+    public function __construct(ReflectionProvider $reflectionProvider)
+    {
+        $this->calleeResolver = new CalleeResolver($reflectionProvider);
     }
 
     /**
-     * Returns null unless the call is the builtin constant() with at least one
-     * argument; a namespaced user function named constant() does not count.
+     * Returns null unless the callee resolves to builtin constant(); a
+     * namespaced user function named constant() does not count. Direct calls
+     * need an argument, while a first-class callable is treated as dynamic
+     * because its eventual arguments are unknown here.
      */
-    public function resolveConstantFunctionCall(FuncCall $node, Scope $scope): ?ConstantAccess
+    public function resolveConstantFunctionCall(FuncCall|FunctionCallableNode $node, Scope $scope): ?ConstantAccess
     {
-        if (!$node->name instanceof Name) {
-            // Dynamic function calls like `$functionName()`.
+        $function = $this->calleeResolver->resolveFunction($node, $scope);
+        if ($function === null || strtolower($function->getName()) !== 'constant') {
             return null;
         }
 
-        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($node->name, $scope);
-
-        if ($resolvedFunctionName === null || strtolower($resolvedFunctionName) !== 'constant') {
-            return null;
+        if ($node instanceof FunctionCallableNode) {
+            // The first-class callable's eventual argument is unknown here.
+            return new DynamicConstantAccess();
         }
 
         $args = $node->getArgs();

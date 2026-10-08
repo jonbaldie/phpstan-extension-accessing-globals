@@ -40,6 +40,25 @@ class ForbidUsingGlobalConstantsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue115CallableStringAndFirstClassConstantCalls(): void
+    {
+        require_once __DIR__ . "/Data/issue-115-constant-callable-expressions.php";
+
+        $this->analyse(
+            [__DIR__ . "/Data/issue-115-constant-callable-expressions.php"],
+            [
+                [
+                    'Code is accessing global constant "MY_CONSTANT". Pass it as an argument instead to make the dependency explicit.',
+                    10,
+                ],
+                [
+                    'Code is calling constant() with a dynamic constant name, which may read a global constant. Pass the value as an argument instead to make the dependency explicit.',
+                    12,
+                ],
+            ],
+        );
+    }
+
     public function testIssue23DynamicConstantLookups(): void
     {
         $this->analyse(

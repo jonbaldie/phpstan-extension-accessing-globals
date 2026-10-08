@@ -18,10 +18,11 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class ForbidImpureGlobalFunctionsRule implements Rule
 {
-    public function __construct(
-        private ReflectionProvider $reflectionProvider,
-    )
+    private readonly CalleeResolver $calleeResolver;
+
+    public function __construct(ReflectionProvider $reflectionProvider)
     {
+        $this->calleeResolver = new CalleeResolver($reflectionProvider);
     }
 
     public function getNodeType(): string
@@ -41,39 +42,27 @@ class ForbidImpureGlobalFunctionsRule implements Rule
             return [];
         }
 
-        if ($node instanceof FunctionCallableNode) {
-            $name = $node->getName();
-        } elseif ($node instanceof FuncCall) {
-            $name = $node->name;
-        } else {
+        if (!$node instanceof FunctionCallableNode && !$node instanceof FuncCall) {
             return [];
         }
 
-        if (!$name instanceof Name) {
-            // This handles dynamic function calls like `$functionName()`.
-            // These are a separate problem and not the focus of this rule.
+        $function = $this->calleeResolver->resolveFunction($node, $scope);
+        if ($function === null || !ImpureFunctionCatalog::isImpure($function->getName())) {
             return [];
         }
 
-        $resolvedFunctionName = $this->reflectionProvider->resolveFunctionName($name, $scope);
+        $name = $node instanceof FuncCall ? $node->name : $node->getName();
+        $displayName = $name instanceof Name ? $name->toString() : $function->getName();
 
-        if ($resolvedFunctionName === null) {
-            return [];
-        }
-
-        if (ImpureFunctionCatalog::isImpure($resolvedFunctionName)) {
-            return [
-                RuleErrorBuilder::message(
-                    sprintf(
-                        'Code is calling the impure function "%s()". This creates a hidden dependency on external state; pass the result as an argument instead.',
-                        $name->toString()
-                    )
+        return [
+            RuleErrorBuilder::message(
+                sprintf(
+                    'Code is calling the impure function "%s()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    $displayName
                 )
-                    ->identifier('function.impure')
-                    ->build(),
-            ];
-        }
-
-        return [];
+            )
+                ->identifier('function.impure')
+                ->build(),
+        ];
     }
 }
