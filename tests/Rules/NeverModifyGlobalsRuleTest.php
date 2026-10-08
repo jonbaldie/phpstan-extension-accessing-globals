@@ -361,4 +361,39 @@ class NeverModifyGlobalsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue116GlobalsKeysUseConstantStringResolution(): void
+    {
+        $fixture = __DIR__ . "/Data/issue-116-globals-key-resolution.php";
+        $dynamic = 'Code is modifying a global variable through $GLOBALS with a dynamic key. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [
+                    'Code is modifying global variable through $GLOBALS[\'db\']. Use dependency injection instead.',
+                    7,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'db\']. Use dependency injection instead.',
+                    9,
+                ],
+                [
+                    'Code is modifying global variable through $GLOBALS[\'db\']. Use dependency injection instead.',
+                    10,
+                ],
+                [$dynamic, 11],
+                [$dynamic, 12],
+                [$dynamic, 13],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 6, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
+        );
+    }
 }

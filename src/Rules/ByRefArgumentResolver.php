@@ -174,12 +174,7 @@ final class ByRefArgumentResolver
             return $name->toString();
         }
 
-        $constantStrings = $scope->getType($name)->getConstantStrings();
-        if (count($constantStrings) !== 1) {
-            return null;
-        }
-
-        return $constantStrings[0]->getValue();
+        return GlobalVariableNameResolver::constantString($name, $scope);
     }
 
     /**

@@ -10,7 +10,6 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Scalar\String_;
 
 /**
  * @implements Rule<Node>
@@ -62,17 +61,15 @@ class NeverModifyGlobalsRule implements Rule
                 continue;
             }
 
-            $key = "unknown";
-            if ($globalTarget->dim instanceof String_) {
-                $key = $globalTarget->dim->value;
-            }
-
-            $errors[] = RuleErrorBuilder::message(
-                sprintf(
+            $key = GlobalVariableNameResolver::resolveGlobalsKey($globalTarget, $scope);
+            $message = $key === null
+                ? 'Code is modifying a global variable through $GLOBALS with a dynamic key. Use dependency injection instead.'
+                : sprintf(
                     'Code is modifying global variable through $GLOBALS[\'%s\']. Use dependency injection instead.',
                     $key,
-                ),
-            )
+                );
+
+            $errors[] = RuleErrorBuilder::message($message)
                 ->identifier("modify.global")
                 ->build();
         }
