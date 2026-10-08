@@ -18,9 +18,11 @@ use PHPStan\Type\TypeCombinator;
  */
 final class ByRefArgumentResolver
 {
-    public function __construct(
-        private readonly ReflectionProvider $reflectionProvider,
-    ) {
+    private readonly CalleeResolver $calleeResolver;
+
+    public function __construct(ReflectionProvider $reflectionProvider)
+    {
+        $this->calleeResolver = new CalleeResolver($reflectionProvider);
     }
 
     /**
@@ -59,38 +61,16 @@ final class ByRefArgumentResolver
      */
     private function resolveFuncCall(Node\Expr\FuncCall $node, Scope $scope): array
     {
-        if (!$node->name instanceof Node\Name) {
-            return $this->resolveCallableExpressionCall($node->name, $node->getArgs(), $scope);
-        }
+        $function = $this->calleeResolver->resolveFunction($node, $scope);
 
-        if (!$this->reflectionProvider->hasFunction($node->name, $scope)) {
-            return [];
-        }
-
-        $function = $this->reflectionProvider->getFunction($node->name, $scope);
-
-        if ($function->isBuiltin() && strtolower($function->getName()) === 'array_multisort') {
+        if ($function?->isBuiltin() && strtolower($function->getName()) === 'array_multisort') {
             return $this->resolveAllArguments($node->getArgs());
         }
 
-        return $this->resolveByReferenceArguments($function->getVariants(), $node->getArgs());
-    }
-
-    /**
-     * Resolves `$callee(...)`, where the callee is an expression such as an
-     * invokable object, a closure or a callable string.
-     *
-     * @param list<Node\Arg> $args
-     * @return list<Node\Expr>
-     */
-    private function resolveCallableExpressionCall(Node\Expr $callee, array $args, Scope $scope): array
-    {
-        $calleeType = $scope->getType($callee);
-        if (!$calleeType->isCallable()->yes()) {
-            return [];
-        }
-
-        return $this->resolveByReferenceArguments($calleeType->getCallableParametersAcceptors($scope), $args);
+        return $this->resolveByReferenceArguments(
+            $this->calleeResolver->getParameterAcceptors($node, $scope, $function),
+            $node->getArgs(),
+        );
     }
 
     /**
