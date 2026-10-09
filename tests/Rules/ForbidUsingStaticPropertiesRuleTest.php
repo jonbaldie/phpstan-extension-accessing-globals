@@ -56,7 +56,7 @@ class ForbidUsingStaticPropertiesRuleTest extends RuleTestCase
         );
     }
 
-    public function testIssue113ResolvedTargetsAreReportedByClassName(): void
+    public function testIssue113TypedOperandsAndConstantPropertyNamesAreReported(): void
     {
         require_once __DIR__ . "/Data/issue-113-static-property-targets.php";
 
@@ -65,11 +65,19 @@ class ForbidUsingStaticPropertiesRuleTest extends RuleTestCase
             [
                 [
                     'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Issue113\Config::$value. Static properties are global state; pass the value as an argument instead.',
-                    11,
+                    18,
                 ],
                 [
                     'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Issue113\Config::$value. Static properties are global state; pass the value as an argument instead.',
-                    17,
+                    19,
+                ],
+                [
+                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Issue113\Config::$value. Static properties are global state; pass the value as an argument instead.',
+                    20,
+                ],
+                [
+                    'Code is accessing static property AccessingGlobals\Tests\Rules\Data\Issue113\Config::$value. Static properties are global state; pass the value as an argument instead.',
+                    21,
                 ],
             ],
         );

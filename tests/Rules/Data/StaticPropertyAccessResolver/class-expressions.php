@@ -22,7 +22,9 @@ class Other
  */
 function readTypedOperands(Config $config, string $className)
 {
-    return [$config::$value, (new Config())::$value, $className::$value];
+    $classConstant = Config::class;
+
+    return [$config::$value, (new Config())::$value, $className::$value, $classConstant::$value];
 }
 
 function readUnresolvableOperands($untyped, Config|Other $either, string $name)

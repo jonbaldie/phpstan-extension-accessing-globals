@@ -51,7 +51,7 @@ class StaticPropertyAccessResolverTest extends RuleTestCase
         };
     }
 
-    public function testNamedClasses(): void
+    public function testNamedClassesAreKeptAsWritten(): void
     {
         // RuleTestCase analyzes fixtures in isolation, so load the declarations
         // first for ReflectionProvider to resolve them as the CLI does.
@@ -61,9 +61,9 @@ class StaticPropertyAccessResolverTest extends RuleTestCase
             [__DIR__ . '/Data/StaticPropertyAccessResolver/named-classes.php'],
             [
                 ['StaticPropertyAccessResolverFixtures\\Config :: value', 12],
-                ['StaticPropertyAccessResolverFixtures\\Child :: value', 19],
-                ['StaticPropertyAccessResolverFixtures\\Child :: value', 19],
-                ['StaticPropertyAccessResolverFixtures\\Config :: value', 19],
+                ['parent :: value', 19],
+                ['self :: value', 19],
+                ['static :: value', 19],
             ],
         );
     }
@@ -76,9 +76,10 @@ class StaticPropertyAccessResolverTest extends RuleTestCase
             [__DIR__ . '/Data/StaticPropertyAccessResolver/class-expressions.php'],
             [
                 ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 11],
-                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 25],
-                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 25],
-                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 25],
+                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 27],
+                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 27],
+                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 27],
+                ['StaticPropertyAccessResolverFixtures\\Expressions\\Config :: value', 27],
             ],
         );
     }

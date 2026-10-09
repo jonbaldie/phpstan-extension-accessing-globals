@@ -11,9 +11,10 @@ use PhpParser\Node\VarLikeIdentifier;
 use PHPStan\Analyser\Scope;
 
 /**
- * Names the class and property a static property fetch reads. `self`,
- * `static`, and `parent` resolve to the class they denote; any other class
- * expression resolves through its type when that is exactly one class.
+ * Names the class and property a static property fetch reads. A named class
+ * (including `self`, `static`, and `parent`) is kept as written; any other
+ * class expression, `$this` included, resolves through its type when that is
+ * exactly one class.
  */
 final class StaticPropertyAccessResolver
 {
@@ -34,10 +35,17 @@ final class StaticPropertyAccessResolver
     private function resolveClassName(Name|Expr $class, Scope $scope): ?string
     {
         if ($class instanceof Name) {
-            return $scope->resolveName($class);
+            return $class->toString();
         }
 
-        $classNames = $scope->getType($class)->getObjectTypeOrClassStringObjectType()->getObjectClassNames();
+        // An object operand names its class; anything else is read as a
+        // class-string, as `$className::$prop` does at runtime.
+        $classType = $scope->getType($class);
+        if (!$classType->canCallMethods()->yes()) {
+            $classType = $classType->getClassStringObjectType();
+        }
+
+        $classNames = $classType->getObjectClassNames();
         if (count($classNames) !== 1) {
             return null;
         }
