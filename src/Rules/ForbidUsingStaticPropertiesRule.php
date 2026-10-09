@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -16,6 +14,13 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class ForbidUsingStaticPropertiesRule implements Rule
 {
+    private readonly StaticPropertyAccessResolver $staticPropertyAccessResolver;
+
+    public function __construct()
+    {
+        $this->staticPropertyAccessResolver = new StaticPropertyAccessResolver();
+    }
+
     public function getNodeType(): string
     {
         return Node\Expr\StaticPropertyFetch::class;
@@ -37,28 +42,17 @@ class ForbidUsingStaticPropertiesRule implements Rule
             return [];
         }
 
-        $classNode = $node->class;
-        if ($classNode instanceof Name) {
-            $className = $classNode->toString();
-        } elseif ($classNode instanceof Node\Expr\Variable && $classNode->name === 'this') {
-            $classReflection = $scope->getClassReflection();
-            if ($classReflection === null) {
-                return [];
-            }
-
-            $className = $classReflection->getName();
-        } else {
+        $access = $this->staticPropertyAccessResolver->resolve($node, $scope);
+        if ($access === null) {
             return [];
         }
-
-        $propertyName = $node->name instanceof Identifier ? $node->name->toString() : '{expression}';
 
         return [
             RuleErrorBuilder::message(
                 sprintf(
                     'Code is accessing static property %s::$%s. Static properties are global state; pass the value as an argument instead.',
-                    $className,
-                    $propertyName
+                    $access->className,
+                    $access->propertyName
                 )
             )
                 ->identifier('property.static')
