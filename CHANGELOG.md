@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.6
+
+- Resolve `$GLOBALS` keys through constant-string types instead of reporting `$GLOBALS['unknown']` (#116)
+- Detect impure functions and `constant()` lookups reached through callable expressions (#115)
+- Detect static property access through typed class operands and constant-string property names (#113)
+
 ## 0.6.5
 
 - Extract the impure function catalog into a dedicated class (#97)
