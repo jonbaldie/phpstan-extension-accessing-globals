@@ -60,14 +60,15 @@ class ClassOperandResolverTest extends RuleTestCase
         $this->analyse(
             [self::FIXTURE],
             [
-                // Named classes keep their name as written; their type resolves.
+                // Named classes keep their name as written; their type
+                // resolves. `$this` resolves through its type.
                 ['name: self, type: $this(' . $child . ')', 23],
                 ['name: static, type: static(' . $child . ')', 23],
                 ['name: parent, type: $this(' . $config . ')', 23],
-                // `$this` resolves through its type.
                 ['name: ' . $child . ', type: $this(' . $child . ')', 23],
+                // `Config::`, then typed objects and class-strings, resolve
+                // to the object type.
                 ['name: ' . $config . ', type: ' . $config, 34],
-                // Typed objects and class-strings resolve to the object type.
                 ['name: ' . $config . ', type: ' . $config, 34],
                 ['name: ' . $config . ', type: ' . $config, 34],
                 ['name: ' . $config . ', type: ' . $config, 34],

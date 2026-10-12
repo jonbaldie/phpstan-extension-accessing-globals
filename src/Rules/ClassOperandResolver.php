@@ -10,15 +10,16 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Type\Type;
 
 /**
- * Resolves the class operand of a static property fetch, static call, `new`,
- * or class constant fetch (`Config::`, `$config::`, `$className::`). An
- * object operand names its class; any other expression is read as a
- * class-string, as PHP does at runtime.
+ * Resolves the class operand of a static property fetch, static call, or
+ * `new` (`Config::`, `$config::`, `$className::`). An object operand names
+ * its class; any other expression is read as a class-string, as PHP does at
+ * runtime.
  */
 final class ClassOperandResolver
 {
     /**
-     * Null when the operand names no class.
+     * A named class always resolves. Null when an expression operand names
+     * no class.
      */
     public static function resolveType(Name|Expr $class, Scope $scope): ?Type
     {
