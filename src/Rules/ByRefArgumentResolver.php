@@ -7,7 +7,6 @@ namespace AccessingGlobals\Rules;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 
 /**
@@ -129,7 +128,12 @@ final class ByRefArgumentResolver
             return [];
         }
 
-        $method = $scope->getMethodReflection($this->resolveClassType($node->class, $scope), $methodName);
+        $classType = ClassOperandResolver::resolveType($node->class, $scope);
+        if ($classType === null) {
+            return [];
+        }
+
+        $method = $scope->getMethodReflection($classType, $methodName);
         if ($method === null) {
             return [];
         }
@@ -144,7 +148,10 @@ final class ByRefArgumentResolver
     {
         $classType = $node->class instanceof Node\Stmt\Class_
             ? $scope->getType($node)
-            : $this->resolveClassType($node->class, $scope);
+            : ClassOperandResolver::resolveType($node->class, $scope);
+        if ($classType === null) {
+            return [];
+        }
 
         $method = $scope->getMethodReflection($classType, '__construct');
         if ($method === null) {
@@ -152,20 +159,6 @@ final class ByRefArgumentResolver
         }
 
         return $this->resolveByReferenceArguments($method->getVariants(), $node->getArgs());
-    }
-
-    private function resolveClassType(Node\Name|Node\Expr $class, Scope $scope): Type
-    {
-        if ($class instanceof Node\Name) {
-            return $scope->resolveTypeByName($class);
-        }
-
-        $classType = $scope->getType($class);
-        if (!$classType->canCallMethods()->yes()) {
-            $classType = $classType->getClassStringObjectType();
-        }
-
-        return $classType;
     }
 
     private function resolveMethodName(Node\Identifier|Node\Expr $name, Scope $scope): ?string

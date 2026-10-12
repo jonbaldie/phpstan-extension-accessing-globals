@@ -6,7 +6,6 @@ namespace AccessingGlobals\Rules;
 
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\StaticPropertyFetch;
-use PhpParser\Node\Name;
 use PhpParser\Node\VarLikeIdentifier;
 use PHPStan\Analyser\Scope;
 
@@ -24,33 +23,12 @@ final class StaticPropertyAccessResolver
      */
     public function resolve(StaticPropertyFetch $node, Scope $scope): ?StaticPropertyAccess
     {
-        $className = $this->resolveClassName($node->class, $scope);
+        $className = ClassOperandResolver::resolveName($node->class, $scope);
         if ($className === null) {
             return null;
         }
 
         return new StaticPropertyAccess($className, $this->resolvePropertyName($node->name, $scope));
-    }
-
-    private function resolveClassName(Name|Expr $class, Scope $scope): ?string
-    {
-        if ($class instanceof Name) {
-            return $class->toString();
-        }
-
-        // An object operand names its class; anything else is read as a
-        // class-string, as `$className::$prop` does at runtime.
-        $classType = $scope->getType($class);
-        if (!$classType->canCallMethods()->yes()) {
-            $classType = $classType->getClassStringObjectType();
-        }
-
-        $classNames = $classType->getObjectClassNames();
-        if (count($classNames) !== 1) {
-            return null;
-        }
-
-        return $classNames[0];
     }
 
     private function resolvePropertyName(VarLikeIdentifier|Expr $name, Scope $scope): string
