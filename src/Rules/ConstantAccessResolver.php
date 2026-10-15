@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Rules;
 
-use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\FunctionCallableNode;
@@ -43,15 +42,13 @@ final class ConstantAccessResolver
             return null;
         }
 
-        $constantNameArgument = $args[0]->value;
+        $constantName = ConstantStringResolver::resolve($args[0]->value, $scope);
 
-        if (!$constantNameArgument instanceof Node\Scalar\String_) {
-            // The name is not statically known; the lookup may resolve to
-            // either a global or a class constant at runtime.
+        if ($constantName === null) {
+            // The name is not one statically known string; the lookup may
+            // resolve to either a global or a class constant at runtime.
             return new DynamicConstantAccess();
         }
-
-        $constantName = $constantNameArgument->value;
 
         // constant('Foo::BAR') reads a class constant (PHP 8.3+).
         if (str_contains($constantName, '::')) {

@@ -97,4 +97,21 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue125KnownClassConstantNamesViaConstant(): void
+    {
+        $this->analyse(
+            [
+                __DIR__ . "/Data/Issue125/Config.php",
+                __DIR__ . "/Data/Issue125/Priority.php",
+                __DIR__ . "/Data/Issue125/known-constant-names.php",
+            ],
+            [
+                [
+                    "Code is accessing constant AccessingGlobals\\Tests\\Rules\\Data\\Issue125\\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    31,
+                ],
+            ],
+        );
+    }
 }

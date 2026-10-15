@@ -37,6 +37,6 @@ final class StaticPropertyAccessResolver
             return $name->toString();
         }
 
-        return GlobalVariableNameResolver::constantString($name, $scope) ?? '{expression}';
+        return ConstantStringResolver::resolve($name, $scope) ?? '{expression}';
     }
 }

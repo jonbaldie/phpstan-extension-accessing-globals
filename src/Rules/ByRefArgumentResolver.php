@@ -167,7 +167,7 @@ final class ByRefArgumentResolver
             return $name->toString();
         }
 
-        return GlobalVariableNameResolver::constantString($name, $scope);
+        return ConstantStringResolver::resolve($name, $scope);
     }
 
     /**
