@@ -24,5 +24,17 @@ function constantAccessResolverQualifiedLiterals(): void
 function constantAccessResolverDynamicName(string $dynamic): void
 {
     constant($dynamic);
+}
+
+function constantAccessResolverKnownNames(bool $flag, int $number): void
+{
+    $globalName = 'FOO';
+    constant($globalName);
+    $className = 'Foo::BAR';
+    constant($className);
     constant('Foo' . '::BAR');
+    $union = $flag ? 'FOO' : 'BAR';
+    constant($union);
+    $withInt = $flag ? 'FOO' : $number;
+    constant($withInt);
 }

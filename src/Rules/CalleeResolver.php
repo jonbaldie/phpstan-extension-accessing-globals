@@ -37,12 +37,7 @@ final class CalleeResolver
             return $this->resolveNamedFunction($callee, $scope);
         }
 
-        $constantStrings = $scope->getType($callee)->getConstantStrings();
-        if (count($constantStrings) !== 1) {
-            return null;
-        }
-
-        $functionName = ltrim($constantStrings[0]->getValue(), '\\');
+        $functionName = ltrim(ConstantStringResolver::resolve($callee, $scope) ?? '', '\\');
         if ($functionName === '') {
             return null;
         }

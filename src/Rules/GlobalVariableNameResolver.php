@@ -20,7 +20,7 @@ final class GlobalVariableNameResolver
             return $variable->name;
         }
 
-        return self::constantString($variable->name, $scope);
+        return ConstantStringResolver::resolve($variable->name, $scope);
     }
 
     /**
@@ -37,19 +37,6 @@ final class GlobalVariableNameResolver
             return null;
         }
 
-        return self::constantString($fetch->dim, $scope);
-    }
-
-    /**
-     * The single constant string an expression evaluates to, or null.
-     */
-    public static function constantString(Node\Expr $expr, Scope $scope): ?string
-    {
-        $constantStrings = $scope->getType($expr)->getConstantStrings();
-        if (count($constantStrings) !== 1) {
-            return null;
-        }
-
-        return $constantStrings[0]->getValue();
+        return ConstantStringResolver::resolve($fetch->dim, $scope);
     }
 }

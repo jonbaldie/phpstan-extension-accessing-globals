@@ -105,4 +105,29 @@ class ForbidUsingGlobalConstantsRuleTest extends RuleTestCase
             ],
         );
     }
+
+    public function testIssue125KnownGlobalConstantNamesViaConstant(): void
+    {
+        $this->analyse(
+            [
+                __DIR__ . "/Data/Issue125/Config.php",
+                __DIR__ . "/Data/Issue125/Priority.php",
+                __DIR__ . "/Data/Issue125/known-constant-names.php",
+            ],
+            [
+                [
+                    'Code is accessing global constant "PHP_VERSION". Pass it as an argument instead to make the dependency explicit.',
+                    35,
+                ],
+                [
+                    'Code is calling constant() with a dynamic constant name, which may read a global constant. Pass the value as an argument instead to make the dependency explicit.',
+                    38,
+                ],
+                [
+                    'Code is calling constant() with a dynamic constant name, which may read a global constant. Pass the value as an argument instead to make the dependency explicit.',
+                    39,
+                ],
+            ],
+        );
+    }
 }

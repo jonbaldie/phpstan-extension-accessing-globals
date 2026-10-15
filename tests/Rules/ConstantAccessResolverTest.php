@@ -75,7 +75,11 @@ class ConstantAccessResolverTest extends RuleTestCase
                 ['class Foo :: BAR', 20],
                 ['class \\Ns\\Foo :: BAR', 21],
                 ['dynamic', 26],
-                ['dynamic', 27],
+                ['global FOO', 32],
+                ['class Foo :: BAR', 34],
+                ['class Foo :: BAR', 35],
+                ['dynamic', 37],
+                ['dynamic', 39],
             ],
         );
     }
