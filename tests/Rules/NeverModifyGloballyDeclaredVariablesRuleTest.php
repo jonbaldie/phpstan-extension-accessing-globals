@@ -6,6 +6,7 @@ namespace AccessingGlobals\Tests\Rules;
 
 use AccessingGlobals\Rules\ByRefArgumentResolver;
 use AccessingGlobals\Rules\MutationTargetResolver;
+use AccessingGlobals\Rules\NeverModifyGloballyDeclaredVariablesCollector;
 use AccessingGlobals\Rules\NeverModifyGloballyDeclaredVariablesRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -21,6 +22,15 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
             new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
             self::createReflectionProvider(),
         );
+    }
+
+    protected function getCollectors(): array
+    {
+        return [
+            new NeverModifyGloballyDeclaredVariablesCollector(
+                new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
+            ),
+        ];
     }
 
     public function testRule(): void
@@ -670,6 +680,35 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
                     18,
                 ],
             ],
+        );
+    }
+
+    public function testIssue107ByRefTypedReceivers(): void
+    {
+        require_once __DIR__ . "/Data/issue-107-byref-typed-receivers.php";
+        $fixture = __DIR__ . "/Data/issue-107-byref-typed-receivers.php";
+
+        $dbMessage = 'Code is modifying variable $db that was declared with the "global" keyword. Use dependency injection instead.';
+        $stateMessage = 'Code is modifying variable $state that was declared with the "global" keyword. Use dependency injection instead.';
+
+        $this->analyse(
+            [$fixture],
+            [
+                [$dbMessage, 27],
+                [$dbMessage, 36],
+                [$dbMessage, 43],
+                [$dbMessage, 51],
+                [$dbMessage, 59],
+                [$stateMessage, 65],
+            ],
+        );
+
+        $this->assertSame(
+            array_fill(0, 6, 'modify.global'),
+            array_map(
+                static fn(\PHPStan\Analyser\Error $error): ?string => $error->getIdentifier(),
+                $this->gatherAnalyserErrors([$fixture]),
+            ),
         );
     }
 }

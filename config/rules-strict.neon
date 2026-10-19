@@ -11,6 +11,10 @@ services:
         class: AccessingGlobals\Rules\NeverModifyGlobalsRule
         tags:
             - phpstan.rules.rule
+    accessingGlobals.NeverModifyGloballyDeclaredVariablesCollector:
+        class: AccessingGlobals\Rules\NeverModifyGloballyDeclaredVariablesCollector
+        tags:
+            - phpstan.collector
     accessingGlobals.NeverModifyGloballyDeclaredVariablesRule:
         class: AccessingGlobals\Rules\NeverModifyGloballyDeclaredVariablesRule
         tags:
