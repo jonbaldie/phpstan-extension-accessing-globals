@@ -7,7 +7,6 @@ namespace AccessingGlobals\Rules;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\TypeCombinator;
 
 /**
  * Resolves the arguments of an invocation that are passed to a by-reference
@@ -29,8 +28,8 @@ final class ByRefArgumentResolver
      */
     public function resolve(Node\Expr $call, Scope $scope): array
     {
-        if ($call instanceof Node\Expr\FuncCall) {
-            return $this->resolveFuncCall($call, $scope);
+        if (!$call instanceof Node\Expr\CallLike) {
+            return [];
         }
 
         if ($call instanceof Node\Expr\MethodCall && $call->hasAttribute('virtualNullsafeMethodCall')) {
@@ -40,35 +39,16 @@ final class ByRefArgumentResolver
             return [];
         }
 
-        if ($call instanceof Node\Expr\MethodCall || $call instanceof Node\Expr\NullsafeMethodCall) {
-            return $this->resolveMethodCall($call, $scope);
-        }
-
-        if ($call instanceof Node\Expr\StaticCall) {
-            return $this->resolveStaticCall($call, $scope);
-        }
-
-        if ($call instanceof Node\Expr\New_) {
-            return $this->resolveNew($call, $scope);
-        }
-
-        return [];
-    }
-
-    /**
-     * @return list<Node\Expr>
-     */
-    private function resolveFuncCall(Node\Expr\FuncCall $node, Scope $scope): array
-    {
-        $function = $this->calleeResolver->resolveFunction($node, $scope);
-
-        if ($function?->isBuiltin() && strtolower($function->getName()) === 'array_multisort') {
-            return $this->resolveAllArguments($node->getArgs());
+        if ($call instanceof Node\Expr\FuncCall) {
+            $function = $this->calleeResolver->resolveFunction($call, $scope);
+            if ($function?->isBuiltin() && strtolower($function->getName()) === 'array_multisort') {
+                return $this->resolveAllArguments($call->getArgs());
+            }
         }
 
         return $this->resolveByReferenceArguments(
-            $this->calleeResolver->getParameterAcceptors($node, $scope, $function),
-            $node->getArgs(),
+            $this->calleeResolver->getParameterAcceptors($call, $scope),
+            $call->getArgs(),
         );
     }
 
@@ -90,84 +70,6 @@ final class ByRefArgumentResolver
         }
 
         return $targets;
-    }
-
-    /**
-     * @return list<Node\Expr>
-     */
-    private function resolveMethodCall(
-        Node\Expr\MethodCall|Node\Expr\NullsafeMethodCall $node,
-        Scope $scope,
-    ): array {
-        $methodName = $this->resolveMethodName($node->name, $scope);
-        if ($methodName === null) {
-            return [];
-        }
-
-        $callerType = $scope->getType($node->var);
-        if ($node instanceof Node\Expr\NullsafeMethodCall) {
-            // The call only happens when the receiver is not null.
-            $callerType = TypeCombinator::removeNull($callerType);
-        }
-
-        $method = $scope->getMethodReflection($callerType, $methodName);
-        if ($method === null) {
-            return [];
-        }
-
-        return $this->resolveByReferenceArguments($method->getVariants(), $node->getArgs());
-    }
-
-    /**
-     * @return list<Node\Expr>
-     */
-    private function resolveStaticCall(Node\Expr\StaticCall $node, Scope $scope): array
-    {
-        $methodName = $this->resolveMethodName($node->name, $scope);
-        if ($methodName === null) {
-            return [];
-        }
-
-        $classType = ClassOperandResolver::resolveType($node->class, $scope);
-        if ($classType === null) {
-            return [];
-        }
-
-        $method = $scope->getMethodReflection($classType, $methodName);
-        if ($method === null) {
-            return [];
-        }
-
-        return $this->resolveByReferenceArguments($method->getVariants(), $node->getArgs());
-    }
-
-    /**
-     * @return list<Node\Expr>
-     */
-    private function resolveNew(Node\Expr\New_ $node, Scope $scope): array
-    {
-        $classType = $node->class instanceof Node\Stmt\Class_
-            ? $scope->getType($node)
-            : ClassOperandResolver::resolveType($node->class, $scope);
-        if ($classType === null) {
-            return [];
-        }
-
-        $method = $scope->getMethodReflection($classType, '__construct');
-        if ($method === null) {
-            return [];
-        }
-
-        return $this->resolveByReferenceArguments($method->getVariants(), $node->getArgs());
-    }
-
-    private function resolveMethodName(Node\Identifier|Node\Expr $name, Scope $scope): ?string
-    {
-        if ($name instanceof Node\Identifier) {
-            return $name->toString();
-        }
-
-        return ConstantStringResolver::resolve($name, $scope);
     }
 
     /**
