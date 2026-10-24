@@ -1,0 +1,12 @@
+$ vendor/bin/phpstan analyze -c config/rules.neon docs/exploratory-testing/2026-10-24-phpstan-extension-accessing-globals/evidence/probe-root-scope-blocks.php --level=0 --no-progress --error-format=raw
+exit=1
+probe-root-scope-blocks.php:18:Code is accessing superglobal variable $_GET in a nested scope. Pass the value as an argument instead. [identifier=access.superglobal.nested]
+probe-root-scope-blocks.php:24:Code is accessing superglobal variable $_COOKIE in a nested scope. Pass the value as an argument instead. [identifier=access.superglobal.nested]
+$ vendor/bin/phpstan analyze -c config/rules-strict.neon docs/exploratory-testing/2026-10-24-phpstan-extension-accessing-globals/evidence/probe-root-scope-blocks.php --level=0 --no-progress --error-format=raw
+exit=1
+probe-root-scope-blocks.php:4:Code is accessing superglobal variable $_GET. Pass the value as an argument instead. [identifier=access.superglobal]
+probe-root-scope-blocks.php:9:Code is accessing superglobal variable $_SESSION. Pass the value as an argument instead. [identifier=access.superglobal]
+probe-root-scope-blocks.php:9:Code is modifying superglobal variable $_SESSION. Return the new value instead. [identifier=modify.superglobal]
+probe-root-scope-blocks.php:12:Code is accessing superglobal variable $_POST. Pass the value as an argument instead. [identifier=access.superglobal]
+probe-root-scope-blocks.php:18:Code is accessing superglobal variable $_GET. Pass the value as an argument instead. [identifier=access.superglobal]
+probe-root-scope-blocks.php:24:Code is accessing superglobal variable $_COOKIE. Pass the value as an argument instead. [identifier=access.superglobal]

@@ -1,0 +1,36 @@
+$ vendor/bin/phpstan analyse -c phpstan-strict.neon --no-progress --generate-baseline phpstan-baseline.neon
+exit=0
+ [OK] Baseline generated with 4 errors.                                         
+--- phpstan-baseline.neon
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Code is accessing superglobal variable \$_GET\. Pass the value as an argument instead\.$#'
+			identifier: access.superglobal
+			count: 1
+			path: index.php
+
+		-
+			message: '#^Code is accessing global variable \$config\. Use dependency injection instead\.$#'
+			identifier: access.global
+			count: 1
+			path: src/Service.php
+
+		-
+			message: '#^Code is accessing superglobal variable \$_GET\. Pass the value as an argument instead\.$#'
+			identifier: access.superglobal
+			count: 1
+			path: src/Service.php
+
+		-
+			message: '#^Code is modifying variable \$config that was declared with the "global" keyword\. Use dependency injection instead\.$#'
+			identifier: modify.global
+			count: 1
+			path: src/Service.php
+--- phpstan-with-baseline.neon
+includes:
+    - phpstan-strict.neon
+    - phpstan-baseline.neon
+$ vendor/bin/phpstan analyse -c phpstan-with-baseline.neon --no-progress
+exit=0
+ [OK] No errors                                                                 

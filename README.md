@@ -264,5 +264,5 @@ The key principle: **Make all dependencies explicit through function parameters 
 
 ## Exploratory verification
 
-A dated exploratory pass of the public PHPStan rule configurations, including replayable command output and filed findings, is available in [the exploratory testing report](docs/exploratory-testing/2026-10-03-phpstan-extension-accessing-globals/README.md).
+A dated exploratory pass of the public PHPStan rule configurations, including replayable command output and filed findings, is available in [the latest exploratory testing report](docs/exploratory-testing/2026-10-24-phpstan-extension-accessing-globals/README.md). Earlier passes are in [`docs/exploratory-testing/`](docs/exploratory-testing/).
 

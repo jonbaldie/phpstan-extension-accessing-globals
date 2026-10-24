@@ -1,0 +1,5 @@
+$ vendor/bin/phpstan analyze -c config/rules-opinionated.neon docs/exploratory-testing/2026-10-24-phpstan-extension-accessing-globals/evidence/probe-opinionated.php --level=0 --no-progress --error-format=raw
+exit=1
+probe-opinionated.php:31:Code is accessing constant Shop\HasLimit::LIMIT. This creates a hidden dependency; pass the value as an argument instead. [identifier=constant.class]
+probe-opinionated.php:36:Code is accessing static property Shop\Config::$hits. Static properties are global state; pass the value as an argument instead. [identifier=property.static]
+probe-opinionated.php:41:Code is calling the impure function "date()". This creates a hidden dependency on external state; pass the result as an argument instead. [identifier=function.impure]

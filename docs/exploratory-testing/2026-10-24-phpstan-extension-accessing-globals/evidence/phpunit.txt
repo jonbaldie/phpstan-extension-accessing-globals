@@ -1,0 +1,3 @@
+Time: 00:53.886, Memory: 122.50 MB
+
+[30;42mOK (156 tests, 299 assertions)[0m
