@@ -1,0 +1,9 @@
+# Run A: after setting installer ignore + composer install, WITHOUT clearing result cache
+(captured above: still included access.superglobal.nested at src/Service.php:10 from the previous default-rules run)
+
+# Run B: vendor/bin/phpstan clear-result-cache -c phpstan-strict.neon; vendor/bin/phpstan analyse -c phpstan-strict.neon --no-progress --error-format=raw
+exit=1
+index.php:2:Code is accessing superglobal variable $_GET. Pass the value as an argument instead. [identifier=access.superglobal]
+src/Service.php:8:Code is accessing global variable $config. Use dependency injection instead. [identifier=access.global]
+src/Service.php:9:Code is modifying variable $config that was declared with the "global" keyword. Use dependency injection instead. [identifier=modify.global]
+src/Service.php:10:Code is accessing superglobal variable $_GET. Pass the value as an argument instead. [identifier=access.superglobal]
