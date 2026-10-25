@@ -72,14 +72,10 @@ class ForbidUsingClassConstantsRule implements Rule
         }
 
         $classNode = $node->class;
-        if (!$classNode instanceof Name) {
-            // This handles dynamic class constant fetches like `$className::CONSTANT`.
-            // While this is also a form of dependency, it's a more complex case.
-            // This rule focuses on direct, static dependencies.
+        $className = ClassOperandResolver::resolveName($classNode, $scope);
+        if ($className === null) {
             return [];
         }
-
-        $className = $classNode->toString();
 
         // Accessing constants on `self`, `parent`, or `static` is part of the class's
         // own implementation and is not a dependency on an *external* class.
@@ -88,10 +84,12 @@ class ForbidUsingClassConstantsRule implements Rule
         }
 
         $classReflection = $scope->getClassReflection();
-        $resolvedFetchedClassName = $scope->resolveName($classNode);
+        $resolvedFetchedClassName = $classNode instanceof Name
+            ? $scope->resolveName($classNode)
+            : $className;
 
         // If we are inside a class, check if the constant fetch is on the class itself.
-        if ($classReflection !== null && $classReflection->getName() === $resolvedFetchedClassName) {
+        if ($classReflection !== null && strcasecmp($classReflection->getName(), $resolvedFetchedClassName) === 0) {
             return [];
         }
 

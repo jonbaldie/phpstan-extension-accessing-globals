@@ -48,6 +48,44 @@ class ForbidUsingClassConstantsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue129ResolvedClassOperands(): void
+    {
+        $this->analyse(
+            [__DIR__ . "/Data/issue-129-class-constant-operands.php"],
+            [
+                [
+                    "Code is accessing constant AccessingGlobals\\Tests\\Rules\\Data\\Issue129\\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    7,
+                ],
+                [
+                    "Code is accessing constant AccessingGlobals\\Tests\\Rules\\Data\\Issue129\\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.",
+                    13,
+                ],
+            ],
+        );
+    }
+
+    public function testIssue129OperandPolicyAndScopes(): void
+    {
+        $message = "Code is accessing constant AccessingGlobals\\Tests\\Rules\\Data\\Issue129\\Config::TIMEOUT. This creates a hidden dependency; pass the value as an argument instead.";
+
+        $this->analyse(
+            [
+                __DIR__ . "/Data/Issue129/Client.php",
+                __DIR__ . "/Data/Issue129/Child.php",
+            ],
+            [
+                [$message, 13],
+                [$message, 14],
+                [$message, 15],
+                [$message, 22],
+                [$message, 71],
+                [$message, 75],
+                [$message, 77],
+            ],
+        );
+    }
+
     public function testDynamicClassConstantIsSkipped(): void
     {
         $this->analyse(
