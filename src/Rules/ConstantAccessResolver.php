@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessingGlobals\Rules;
 
+use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\FunctionCallableNode;
@@ -13,9 +14,51 @@ final class ConstantAccessResolver
 {
     private readonly CalleeResolver $calleeResolver;
 
-    public function __construct(ReflectionProvider $reflectionProvider)
+    public function __construct(private readonly ReflectionProvider $reflectionProvider)
     {
         $this->calleeResolver = new CalleeResolver($reflectionProvider);
+    }
+
+    /**
+     * Classifies constant access syntax; reporting scope and diagnostics belong
+     * to the rules. Class exclusions are shared by direct and constant() access.
+     */
+    public function resolve(Node\Expr $expr, Scope $scope): ?ConstantAccess
+    {
+        if ($expr instanceof Node\Expr\ConstFetch) {
+            $name = $expr->name->toString();
+            if (in_array(strtolower($name), ['true', 'false', 'null'], true)) {
+                return null;
+            }
+
+            return new GlobalConstantAccess($name);
+        }
+
+        if ($expr instanceof Node\Expr\ClassConstFetch) {
+            if (!$expr->name instanceof Node\Identifier) {
+                return null;
+            }
+
+            $className = ClassOperandResolver::resolveName($expr->class, $scope);
+            if ($className === null) {
+                return null;
+            }
+
+            if ($expr->class instanceof Node\Name) {
+                // Preserve pseudo-class names for the common exclusion below.
+                if (!in_array(strtolower($className), ['self', 'parent', 'static'], true)) {
+                    $className = $scope->resolveName($expr->class);
+                }
+            }
+
+            return $this->resolveClassConstant($className, $expr->name->toString(), $scope);
+        }
+
+        if ($expr instanceof FuncCall || $expr instanceof FunctionCallableNode) {
+            return $this->resolveConstantFunctionCall($expr, $scope);
+        }
+
+        return null;
     }
 
     /**
@@ -54,9 +97,34 @@ final class ConstantAccessResolver
         if (str_contains($constantName, '::')) {
             [$className, $classConstantName] = explode('::', $constantName, 2);
 
-            return new ClassConstantAccess($className, $classConstantName);
+            return $this->resolveClassConstant($className, $classConstantName, $scope);
         }
 
         return new GlobalConstantAccess($constantName);
+    }
+
+    private function resolveClassConstant(string $className, string $constantName, Scope $scope): ?ClassConstantAccess
+    {
+        if ($className === '' || $constantName === '' || strtolower($constantName) === 'class') {
+            return null;
+        }
+
+        if (in_array(strtolower($className), ['self', 'parent', 'static'], true)) {
+            return null;
+        }
+
+        $className = ltrim($className, '\\');
+        $currentClass = $scope->getClassReflection();
+        if ($currentClass !== null && strcasecmp($currentClass->getName(), $className) === 0) {
+            return null;
+        }
+
+        // Enum cases are data type variants rather than configuration values.
+        if ($this->reflectionProvider->hasClass($className)
+            && $this->reflectionProvider->getClass($className)->hasEnumCase($constantName)) {
+            return null;
+        }
+
+        return new ClassConstantAccess($className, $constantName);
     }
 }

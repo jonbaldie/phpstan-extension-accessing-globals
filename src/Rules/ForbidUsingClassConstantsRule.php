@@ -5,13 +5,8 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
@@ -22,9 +17,7 @@ class ForbidUsingClassConstantsRule implements Rule
 {
     private readonly ConstantAccessResolver $constantAccessResolver;
 
-    public function __construct(
-        private ReflectionProvider $reflectionProvider,
-    )
+    public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->constantAccessResolver = new ConstantAccessResolver($reflectionProvider);
     }
@@ -39,141 +32,27 @@ class ForbidUsingClassConstantsRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        // We only care about code inside a function or method.
-        // Closures and arrow functions defined at file scope have no enclosing
-        // function, but their bodies are nested scopes, not root code.
+        // Root-scope closures and arrow functions are nested scopes too.
         if ($scope->getFunction() === null && !$scope->isInAnonymousFunction()) {
             return [];
         }
 
-        if ($node instanceof ClassConstFetch) {
-            return $this->processClassConstFetch($node, $scope);
-        }
-
-        if ($node instanceof FuncCall) {
-            return $this->processConstantFunctionCall($node, $scope);
-        }
-
-        return [];
-    }
-
-    private function processClassConstFetch(ClassConstFetch $node, Scope $scope): array
-    {
-        if (!$node->name instanceof Identifier) {
-            // Dynamic class constant fetches like `Config::{$name}` cannot be resolved
-            // to a specific constant. Skip them silently.
-            return [];
-        }
-
-        // The `::class` syntax is not a constant value access, it's a language feature
-        // for getting a class's fully qualified name. This is not a hidden dependency.
-        if ($node->name->toLowerString() === 'class') {
-            return [];
-        }
-
-        $classNode = $node->class;
-        $className = ClassOperandResolver::resolveName($classNode, $scope);
-        if ($className === null) {
-            return [];
-        }
-
-        // Accessing constants on `self`, `parent`, or `static` is part of the class's
-        // own implementation and is not a dependency on an *external* class.
-        if (in_array(strtolower($className), ['self', 'parent', 'static'], true)) {
-            return [];
-        }
-
-        $classReflection = $scope->getClassReflection();
-        $resolvedFetchedClassName = $classNode instanceof Name
-            ? $scope->resolveName($classNode)
-            : $className;
-
-        // If we are inside a class, check if the constant fetch is on the class itself.
-        if ($classReflection !== null && strcasecmp($classReflection->getName(), $resolvedFetchedClassName) === 0) {
-            return [];
-        }
-
-        // If we've reached this point, the code is accessing a constant on a different,
-        // external class. This creates a hidden, compile-time dependency.
-        $constantName = $node->name->toString();
-
-        // Enum cases are algebraic data type variants, not configuration constants.
-        // Referencing a case like `Priority::High` is idiomatic PHP 8.1+ and is not
-        // a hidden compile-time dependency on a constant value.
-        if ($this->isEnumCase($resolvedFetchedClassName, $constantName)) {
-            return [];
-        }
-
-        return [
-            $this->buildClassConstantError($resolvedFetchedClassName, $constantName),
-        ];
-    }
-
-    private function processConstantFunctionCall(FuncCall $node, Scope $scope): array
-    {
-        $access = $this->constantAccessResolver->resolveConstantFunctionCall($node, $scope);
-
-        // Global and dynamic lookups are ForbidUsingGlobalConstantsRule's concern,
-        // so reporting them here would flag the same call twice.
+        $access = $this->constantAccessResolver->resolve($node, $scope);
+        // Global and dynamic accesses belong to the global-constant rule only.
         if (!$access instanceof ClassConstantAccess) {
             return [];
         }
 
-        $className = $access->className;
-        $constantName = $access->constantName;
-
-        if ($className === '' || $constantName === '') {
-            return [];
-        }
-
-        if (strtolower($constantName) === 'class') {
-            return [];
-        }
-
-        if (in_array(strtolower($className), ['self', 'parent', 'static'], true)) {
-            return [];
-        }
-
-        $normalizedClassName = ltrim($className, '\\');
-
-        $classReflection = $scope->getClassReflection();
-
-        if ($classReflection !== null) {
-            $currentClassName = $classReflection->getName();
-
-            if (strtolower($normalizedClassName) === strtolower($currentClassName)) {
-                return [];
-            }
-        }
-
-        if ($this->isEnumCase($normalizedClassName, $constantName)) {
-            return [];
-        }
-
         return [
-            $this->buildClassConstantError($normalizedClassName, $constantName),
-        ];
-    }
-
-    private function isEnumCase(string $className, string $constantName): bool
-    {
-        if (!$this->reflectionProvider->hasClass($className)) {
-            return false;
-        }
-
-        return $this->reflectionProvider->getClass($className)->hasEnumCase($constantName);
-    }
-
-    private function buildClassConstantError(string $className, string $constantName): IdentifierRuleError
-    {
-        return RuleErrorBuilder::message(
-            sprintf(
-                'Code is accessing constant %s::%s. This creates a hidden dependency; pass the value as an argument instead.',
-                $className,
-                $constantName
+            RuleErrorBuilder::message(
+                sprintf(
+                    'Code is accessing constant %s::%s. This creates a hidden dependency; pass the value as an argument instead.',
+                    $access->className,
+                    $access->constantName
+                )
             )
-        )
-            ->identifier('constant.class')
-            ->build();
+                ->identifier('constant.class')
+                ->build(),
+        ];
     }
 }

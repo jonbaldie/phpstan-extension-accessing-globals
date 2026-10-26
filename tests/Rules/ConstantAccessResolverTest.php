@@ -10,7 +10,6 @@ use AccessingGlobals\Rules\ConstantAccessResolver;
 use AccessingGlobals\Rules\DynamicConstantAccess;
 use AccessingGlobals\Rules\GlobalConstantAccess;
 use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -20,7 +19,7 @@ use PHPStan\Testing\RuleTestCase;
  * Observes ConstantAccessResolver through a probe rule so that every case runs
  * against a real PHPStan Scope, including namespace-aware function resolution.
  *
- * @extends RuleTestCase<Rule<FuncCall>>
+ * @extends RuleTestCase<Rule<Node\Expr>>
  */
 class ConstantAccessResolverTest extends RuleTestCase
 {
@@ -36,12 +35,12 @@ class ConstantAccessResolverTest extends RuleTestCase
 
             public function getNodeType(): string
             {
-                return FuncCall::class;
+                return Node\Expr::class;
             }
 
             public function processNode(Node $node, Scope $scope): array
             {
-                $access = $this->resolver->resolveConstantFunctionCall($node, $scope);
+                $access = $this->resolver->resolve($node, $scope);
 
                 if ($access === null) {
                     return [];
@@ -73,13 +72,42 @@ class ConstantAccessResolverTest extends RuleTestCase
                 ['global FOO', 7],
                 ['global \\Ns\\FOO', 19],
                 ['class Foo :: BAR', 20],
-                ['class \\Ns\\Foo :: BAR', 21],
+                ['class Ns\\Foo :: BAR', 21],
                 ['dynamic', 26],
                 ['global FOO', 32],
                 ['class Foo :: BAR', 34],
                 ['class Foo :: BAR', 35],
                 ['dynamic', 37],
                 ['dynamic', 39],
+            ],
+        );
+    }
+
+    public function testDirectFetches(): void
+    {
+        require_once __DIR__ . '/Data/ConstantAccessResolver/direct.php';
+
+        $this->analyse(
+            [__DIR__ . '/Data/ConstantAccessResolver/direct.php'],
+            [
+                ['global SETTING', 12],
+                ['class ResolverDirect\\External :: LIMIT', 13],
+            ],
+        );
+    }
+
+    public function testSharedClassExclusionsAndResolvedOperands(): void
+    {
+        require_once __DIR__ . '/Data/ConstantAccessResolver/exclusions.php';
+
+        $this->analyse(
+            [__DIR__ . '/Data/ConstantAccessResolver/exclusions.php'],
+            [
+                ['class ResolverExclusions\\External :: LIMIT', 37],
+                ['class ResolverExclusions\\External :: LIMIT', 38],
+                ['class ResolverExclusions\\External :: LIMIT', 39],
+                ['class ResolverExclusions\\Priority :: LIMIT', 40],
+                ['class ResolverExclusions\\Priority :: LIMIT', 41],
             ],
         );
     }
