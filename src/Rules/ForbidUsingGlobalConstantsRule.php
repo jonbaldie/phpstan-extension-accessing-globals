@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;
-use PHPStan\Node\FunctionCallableNode;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
@@ -44,42 +42,7 @@ class ForbidUsingGlobalConstantsRule implements Rule
             return [];
         }
 
-        if ($node instanceof Node\Expr\ConstFetch) {
-            return $this->processConstFetch($node);
-        }
-
-        if ($node instanceof FuncCall || $node instanceof FunctionCallableNode) {
-            return $this->processConstantFunctionCall($node, $scope);
-        }
-
-        return [];
-    }
-
-    private function processConstFetch(Node\Expr\ConstFetch $node): array
-    {
-        $constantName = $node->name->toString();
-        $lowerCaseConstantName = strtolower($constantName);
-
-        // Ignore PHP's built-in pseudo-constants
-        if (in_array($lowerCaseConstantName, ['true', 'false', 'null'], true)) {
-            return [];
-        }
-
-        // If we're here, it's a user-defined global constant.
-        // This is a hidden dependency and should be passed as an argument instead.
-        return [
-            $this->buildGlobalConstantError($constantName),
-        ];
-    }
-
-    /**
-     * constant() can read a global constant without a ConstFetch node, e.g.
-     * constant('MY_CONSTANT'). A first-class constant() callable can do the
-     * same later with an unknown argument, so report that conservatively too.
-     */
-    private function processConstantFunctionCall(FuncCall|FunctionCallableNode $node, Scope $scope): array
-    {
-        $access = $this->constantAccessResolver->resolveConstantFunctionCall($node, $scope);
+        $access = $this->constantAccessResolver->resolve($node, $scope);
 
         if ($access instanceof GlobalConstantAccess) {
             return [
