@@ -16,12 +16,23 @@ use PHPStan\Testing\RuleTestCase;
  */
 class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
 {
+    private array $collectedFacts = [];
+
     protected function getRule(): Rule
     {
-        return new NeverModifyGloballyDeclaredVariablesRule(
-            new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
-            self::createReflectionProvider(),
-        );
+        return new class(function (array $data): void {
+            $this->collectedFacts = $data;
+        }) extends NeverModifyGloballyDeclaredVariablesRule {
+            public function __construct(private readonly \Closure $capture)
+            {
+            }
+
+            public function processNode(\PhpParser\Node $node, \PHPStan\Analyser\Scope $scope): array
+            {
+                ($this->capture)($node->get(NeverModifyGloballyDeclaredVariablesCollector::class));
+                return parent::processNode($node, $scope);
+            }
+        };
     }
 
     protected function getCollectors(): array
@@ -31,6 +42,73 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
                 new MutationTargetResolver(new ByRefArgumentResolver(self::createReflectionProvider())),
             ),
         ];
+    }
+
+    public function testIssue133TraitSourceContext(): void
+    {
+        require_once __DIR__ . '/Data/issue-133-trait.php';
+        require_once __DIR__ . '/Data/issue-133-user.php';
+        $trait = __DIR__ . '/Data/issue-133-trait.php';
+        $errors = $this->gatherAnalyserErrors([$trait, __DIR__ . '/Data/issue-133-user.php']);
+        $this->assertCount(1, $errors);
+        $this->assertSame($trait, $errors[0]->getFilePath());
+        $this->assertSame($trait . ' (in context of class Issue133UsesTrait)', $errors[0]->getFile());
+        $this->assertSame(7, $errors[0]->getLine());
+        $this->assertSame('modify.global', $errors[0]->getIdentifier());
+    }
+
+    public function testIssue133PaddedUsersAndNestedCaptures(): void
+    {
+        require_once __DIR__ . '/Data/issue-133-trait.php';
+        require_once __DIR__ . '/Data/issue-133-captures-trait.php';
+        require_once __DIR__ . '/Data/issue-133-padded-users.php';
+        $trait = __DIR__ . '/Data/issue-133-trait.php';
+        $captures = __DIR__ . '/Data/issue-133-captures-trait.php';
+        $errors = $this->gatherAnalyserErrors([$trait, $captures, __DIR__ . '/Data/issue-133-padded-users.php']);
+        $actual = array_map(static fn(\PHPStan\Analyser\Error $error): array => [
+            $error->getFilePath(), $error->getFile(), $error->getLine(), $error->getIdentifier(),
+        ], $errors);
+        $expected = [];
+        foreach (['Issue133PaddedUser', 'Issue133SecondUser'] as $class) {
+            $expected[] = [$trait, $trait . ' (in context of class ' . $class . ')', 7, 'modify.global'];
+            foreach ([8, 14, 16, 18, 19] as $line) {
+                $expected[] = [$captures, $captures . ' (in context of class ' . $class . ')', $line, 'modify.global'];
+            }
+        }
+        sort($actual);
+        sort($expected);
+        $this->assertSame($expected, $actual);
+
+        // Observe the real collector boundary, including explicit parent links.
+        // The values must survive cache serialization without object identities.
+        $this->assertSame($this->collectedFacts, unserialize(serialize($this->collectedFacts)));
+        $scopes = [];
+        $events = [];
+        foreach ($this->collectedFacts as $entries) {
+            foreach ($entries as $facts) {
+                foreach ($facts as $fact) {
+                    if ($fact['kind'] === 'scope') {
+                        $scopes[$fact['scope']['id']] = $fact['scope'];
+                    } else {
+                        $events[] = $fact;
+                    }
+                }
+            }
+        }
+        $this->assertNotEmpty($events);
+        $contexts = [];
+        foreach ($events as $fact) {
+            $this->assertArrayHasKey($fact['scopeId'], $scopes);
+            $contexts[$fact['scopeId']] ??= $fact['description'];
+            $this->assertSame($contexts[$fact['scopeId']], $fact['description']);
+        }
+        $nestedArrows = array_filter($scopes, static fn(array $scope): bool =>
+            $scope['type'] === 'arrow' && $scope['parent'] !== null && $scopes[$scope['parent']]['type'] === 'arrow');
+        $this->assertCount(4, $nestedArrows);
+        foreach ($nestedArrows as $arrow) {
+            $this->assertNotSame($arrow['id'], $arrow['parent']);
+            $this->assertSame([], $arrow['uses']);
+        }
     }
 
     public function testRule(): void

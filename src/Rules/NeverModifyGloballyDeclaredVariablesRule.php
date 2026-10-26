@@ -11,14 +11,12 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * Detects modifications to variables that were declared with the global keyword.
+ * Detects modifications to variables declared with the global keyword.
  *
- * Example violations:
- * function test() {
- *     global $db;         // Declaration (caught by NeverAccessGlobalsRule)
- *     $db = new PDO(...); // VIOLATION - modifying global variable (caught by this rule)
- * }
- *
+ * @phpstan-import-type Fact from GlobalBindingFact
+ * @phpstan-import-type Event from GlobalBindingFact
+ * @phpstan-import-type FunctionScope from GlobalBindingFact
+ * @phpstan-type Frame array{funcId: string, aliased: list<string|null>, byValue: list<string|null>, aliases: array<string, array<int|string, string|null>>}
  * @implements Rule<CollectedDataNode>
  */
 class NeverModifyGloballyDeclaredVariablesRule implements Rule
@@ -34,311 +32,150 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        /** @var array<string, list<list<array<string, mixed>>>> $data */
+        /** @var array<string, list<list<Fact>>> $data */
         $data = $node->get(NeverModifyGloballyDeclaredVariablesCollector::class);
         $errors = [];
-
-        foreach ($data as $file => $fileEntries) {
+        foreach ($data as $fileEntries) {
             $facts = [];
             foreach ($fileEntries as $entryList) {
                 foreach ($entryList as $fact) {
                     $facts[] = $fact;
                 }
             }
-
-            $this->processFile($file, $facts, $errors);
+            $this->processFacts($facts, $errors);
         }
-
         return $errors;
     }
 
     /**
-     * @param list<array<string, mixed>> $facts
+     * @param list<Fact> $facts
      * @param array<\PHPStan\Rules\RuleError> $errors
      */
-    private function processFile(string $file, array $facts, array &$errors): void
+    private function processFacts(array $facts, array &$errors): void
     {
-        /**
-         * @var array<int, array{
-         *     id: int,
-         *     start: int,
-         *     end: int,
-         *     type: 'function'|'method'|'closure'|'arrow',
-         *     params: list<string>,
-         *     uses: list<array{name: string, byRef: bool}>,
-         *     isClosureOrArrow: bool,
-         *     parent: int|null,
-         *     declaredGlobals: list<string|null>
-         * }> $tree
-         */
         $tree = [];
-        $nonTreeFacts = [];
+        $events = [];
+        $globals = [];
         foreach ($facts as $fact) {
-            if ($fact['kind'] === 'tree') {
-                /** @var list<array{id: int, start: int, end: int, type: 'function'|'method'|'closure'|'arrow', params: list<string>, uses: list<array{name: string, byRef: bool}>, isClosureOrArrow: bool, parent: int|null}> $factTree */
-                $factTree = $fact['tree'];
-                foreach ($factTree as $fInfo) {
-                    $tree[$fInfo['id']] = [
-                        'id' => $fInfo['id'],
-                        'start' => $fInfo['start'],
-                        'end' => $fInfo['end'],
-                        'type' => $fInfo['type'],
-                        'params' => $fInfo['params'],
-                        'uses' => $fInfo['uses'],
-                        'isClosureOrArrow' => $fInfo['isClosureOrArrow'],
-                        'parent' => $fInfo['parent'],
-                        'declaredGlobals' => [],
-                    ];
-                }
+            if ($fact['kind'] === 'scope') {
+                $tree[$fact['scope']['id']] = $fact['scope'];
             } else {
-                $nonTreeFacts[] = $fact;
-            }
-        }
-
-        if (empty($tree)) {
-            return;
-        }
-
-        $findInnermost = static function (int $pos) use ($tree): ?int {
-            $found = null;
-            $smallestRange = null;
-            foreach ($tree as $id => $info) {
-                if ($info['start'] <= $pos && $pos <= $info['end']) {
-                    $range = $info['end'] - $info['start'];
-                    if ($smallestRange === null || $range < $smallestRange) {
-                        $smallestRange = $range;
-                        $found = $id;
-                    }
-                }
-            }
-            return $found;
-        };
-
-        foreach ($nonTreeFacts as $fact) {
-            if ($fact['kind'] === 'global') {
-                $pos = (int) $fact['pos'];
-                $funcId = $findInnermost($pos);
-                if ($funcId !== null && isset($tree[$funcId])) {
-                    /** @var list<string|null> $names */
-                    $names = $fact['names'];
-                    foreach ($names as $name) {
-                        $tree[$funcId]['declaredGlobals'][] = $name;
-                    }
+                $events[] = $fact;
+                if ($fact['kind'] === 'global') {
+                    $globals[$fact['scopeId']] = array_merge($globals[$fact['scopeId']] ?? [], $fact['names']);
                 }
             }
         }
-
-        $hasGlobals = function (int $funcId) use ($tree, &$hasGlobals): bool {
-            if (!empty($tree[$funcId]['declaredGlobals'])) {
-                return true;
+        $rootFacts = [];
+        foreach ($events as $fact) {
+            $root = $fact['scopeId'];
+            while ($tree[$root]['parent'] !== null) {
+                $root = $tree[$root]['parent'];
             }
-            foreach ($tree as $candidate) {
-                if ($candidate['parent'] === $funcId && $hasGlobals($candidate['id'])) {
-                    return true;
-                }
-            }
-            return false;
-        };
-
-        foreach ($tree as $rootId => $rootInfo) {
-            if ($rootInfo['parent'] !== null) {
-                continue;
-            }
-
-            if (!$hasGlobals($rootId)) {
-                continue;
-            }
-
-            $rootFacts = [];
-            foreach ($nonTreeFacts as $fact) {
-                $pos = (int) $fact['pos'];
-                if ($pos >= $rootInfo['start'] && $pos <= $rootInfo['end']) {
-                    $rootFacts[] = $fact;
-                }
-            }
-
-            usort($rootFacts, static fn(array $a, array $b): int => ((int) $a['pos']) <=> ((int) $b['pos']));
-
-            $this->evaluateFunctionTree($file, $rootId, $rootFacts, $tree, $findInnermost, $errors);
+            $rootFacts[$root][] = $fact;
+        }
+        foreach ($rootFacts as $root => $events) {
+            // A root and its lexical descendants share a source. Position is
+            // only an ordering key, never a join or a containment test.
+            usort($events, static fn(array $a, array $b): int => $a['pos'] <=> $b['pos']);
+            $this->evaluateFunctionTree($root, $events, $tree, $globals, $errors);
         }
     }
 
     /**
-     * @param list<array<string, mixed>> $rootFacts
-     * @param array<int, array{
-     *     id: int,
-     *     start: int,
-     *     end: int,
-     *     type: 'function'|'method'|'closure'|'arrow',
-     *     params: list<string>,
-     *     uses: list<array{name: string, byRef: bool}>,
-     *     isClosureOrArrow: bool,
-     *     parent: int|null,
-     *     declaredGlobals: list<string|null>
-     * }> $tree
-     * @param \Closure(int): (?int) $findInnermost
+     * @param list<Event> $rootFacts
+     * @param array<string, FunctionScope> $tree
+     * @param array<string, list<string|null>> $globals
      * @param array<\PHPStan\Rules\RuleError> $errors
      */
     private function evaluateFunctionTree(
-        string $file,
-        int $rootId,
+        string $rootId,
         array $rootFacts,
         array $tree,
-        \Closure $findInnermost,
+        array $globals,
         array &$errors,
     ): void {
-        /**
-         * @var list<array{
-         *     funcId: int,
-         *     aliased: list<string|null>,
-         *     byValue: list<string|null>,
-         *     aliases: array<string, array<int|string, string|null>>
-         * }> $bindingStack
-         */
-        $bindingStack = [
-            [
-                'funcId' => $rootId,
-                'aliased' => $tree[$rootId]['declaredGlobals'],
-                'byValue' => [],
-                'aliases' => [],
-            ],
-        ];
+        /** @var non-empty-list<Frame> $bindingStack */
+        $bindingStack = [[
+            'funcId' => $rootId,
+            'aliased' => $globals[$rootId] ?? [],
+            'byValue' => [],
+            'aliases' => [],
+        ]];
 
         foreach ($rootFacts as $fact) {
-            $pos = (int) $fact['pos'];
-            $innermostId = $findInnermost($pos);
-            if ($innermostId === null) {
-                continue;
-            }
-
             $chain = [];
-            $curr = $innermostId;
+            $curr = $fact['scopeId'];
             while ($curr !== null) {
                 $chain[] = $curr;
                 $curr = $tree[$curr]['parent'];
             }
             $chain = array_reverse($chain);
-
-            if ($chain[0] !== $rootId) {
-                continue;
-            }
-
             while (count($bindingStack) > 1) {
                 $topKey = array_key_last($bindingStack);
-                $topFuncId = $bindingStack[$topKey]['funcId'];
-                if (!in_array($topFuncId, $chain, true) || $pos > $tree[$topFuncId]['end']) {
+                if (!in_array($bindingStack[$topKey]['funcId'], $chain, true)) {
                     array_pop($bindingStack);
                 } else {
                     break;
                 }
             }
-
             $onStackIds = array_column($bindingStack, 'funcId');
             foreach ($chain as $funcIdInChain) {
                 if (!in_array($funcIdInChain, $onStackIds, true)) {
-                    $parentKey = array_key_last($bindingStack);
-                    if ($parentKey === null) {
-                        break;
-                    }
-                    $parentFrame = $bindingStack[$parentKey];
+                    $parentFrame = $bindingStack[array_key_last($bindingStack)];
                     $newFrame = $this->bindingsForNested($tree[$funcIdInChain], $parentFrame);
-                    if (!empty($tree[$funcIdInChain]['declaredGlobals'])) {
-                        $newFrame['aliased'] = array_merge(
-                            $newFrame['aliased'],
-                            $tree[$funcIdInChain]['declaredGlobals'],
-                        );
-                    }
-                    $newFrame['funcId'] = $funcIdInChain;
+                    $newFrame['aliased'] = array_merge($newFrame['aliased'], $globals[$funcIdInChain] ?? []);
                     $bindingStack[] = $newFrame;
                 }
             }
-
             $frameKey = array_key_last($bindingStack);
-            if ($frameKey === null) {
-                continue;
-            }
 
             if ($fact['kind'] === 'alias_assign') {
-                /** @var string $lhs */
                 $lhs = $fact['lhs'];
                 unset($bindingStack[$frameKey]['aliases'][$lhs]);
-                /** @var array<int|string, string|null> $slots */
-                $slots = $fact['slots'];
-                foreach ($slots as $slotKey => $referenced) {
+                foreach ($fact['slots'] as $slotKey => $referenced) {
                     if (in_array($referenced, $bindingStack[$frameKey]['aliased'], true)) {
                         $bindingStack[$frameKey]['aliases'][$lhs][$slotKey] = $referenced;
                     }
                 }
             } elseif ($fact['kind'] === 'mutation') {
-                /** @var string|null $targetName */
                 $targetName = $fact['targetName'];
                 $bindings = $bindingStack[$frameKey];
-
                 if ($targetName !== null && array_key_exists($targetName, $bindings['aliases'])) {
                     $slots = $bindings['aliases'][$targetName];
                     $reached = false;
-                    /** @var list<int|string> $outermostSlotKeys */
-                    $outermostSlotKeys = $fact['outermostSlotKeys'];
-                    foreach ($outermostSlotKeys as $slotKey) {
+                    foreach ($fact['outermostSlotKeys'] as $slotKey) {
                         if (array_key_exists($slotKey, $slots)) {
-                            $this->reportMutation($slots[$slotKey], $file, (int) $fact['line'], $errors);
+                            $this->reportMutation($slots[$slotKey], $fact['file'], $fact['description'], $fact['line'], $errors);
                             $reached = true;
                         }
                     }
-
                     if ($reached) {
                         continue;
                     }
                 }
-
-                $throughObjectHandle = (bool) $fact['throughObjectHandle'];
-                $candidates = $throughObjectHandle
+                $candidates = $fact['throughObjectHandle']
                     ? array_merge($bindings['aliased'], $bindings['byValue'])
                     : $bindings['aliased'];
-
-                $matchesKnownBinding = $targetName !== null
-                    && in_array($targetName, $candidates, true);
-                $matchesDynamicBinding = $targetName === null
-                    && in_array(null, $candidates, true);
-
+                $matchesKnownBinding = $targetName !== null && in_array($targetName, $candidates, true);
+                $matchesDynamicBinding = $targetName === null && in_array(null, $candidates, true);
                 if ($matchesKnownBinding || $matchesDynamicBinding) {
-                    $this->reportMutation($targetName, $file, (int) $fact['line'], $errors);
+                    $this->reportMutation($targetName, $fact['file'], $fact['description'], $fact['line'], $errors);
                 }
             }
         }
     }
 
     /**
-     * @param array{
-     *     id: int,
-     *     start: int,
-     *     end: int,
-     *     type: 'function'|'method'|'closure'|'arrow',
-     *     params: list<string>,
-     *     uses: list<array{name: string, byRef: bool}>,
-     *     isClosureOrArrow: bool,
-     *     parent: int|null,
-     *     declaredGlobals: list<string|null>
-     * } $funcInfo
-     * @param array{
-     *     funcId: int,
-     *     aliased: list<string|null>,
-     *     byValue: list<string|null>,
-     *     aliases: array<string, array<int|string, string|null>>
-     * } $enclosing
-     * @return array{
-     *     funcId: int,
-     *     aliased: list<string|null>,
-     *     byValue: list<string|null>,
-     *     aliases: array<string, array<int|string, string|null>>
-     * }
+     * @param FunctionScope $funcInfo
+     * @param Frame $enclosing
+     * @return Frame
      */
     private function bindingsForNested(array $funcInfo, array $enclosing): array
     {
         $aliased = [];
         $byValue = [];
         $aliases = [];
-
         if ($funcInfo['type'] === 'arrow') {
             $byValue = array_merge($enclosing['aliased'], $enclosing['byValue']);
             $aliases = $enclosing['aliases'];
@@ -349,21 +186,16 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                     $aliased[] = $name;
                 } elseif (array_key_exists($name, $enclosing['aliases'])) {
                     $aliases[$name] = $enclosing['aliases'][$name];
-                } elseif (
-                    in_array($name, $enclosing['aliased'], true)
-                    || in_array($name, $enclosing['byValue'], true)
-                ) {
+                } elseif (in_array($name, $enclosing['aliased'], true) || in_array($name, $enclosing['byValue'], true)) {
                     $byValue[] = $name;
                 }
             }
         }
-
         foreach ($funcInfo['params'] as $paramName) {
             $aliased = array_values(array_diff($aliased, [$paramName]));
             $byValue = array_values(array_diff($byValue, [$paramName]));
             unset($aliases[$paramName]);
         }
-
         return [
             'funcId' => $funcInfo['id'],
             'aliased' => $aliased,
@@ -372,10 +204,8 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         ];
     }
 
-    /**
-     * @param array<\PHPStan\Rules\RuleError> $errors
-     */
-    private function reportMutation(?string $targetName, string $file, int $line, array &$errors): void
+    /** @param array<\PHPStan\Rules\RuleError> $errors */
+    private function reportMutation(?string $targetName, string $file, string $description, int $line, array &$errors): void
     {
         $message = $targetName === null
             ? 'Code is modifying a variable with a dynamic name that was declared with the "global" keyword. Use dependency injection instead.'
@@ -383,9 +213,8 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 'Code is modifying variable $%s that was declared with the "global" keyword. Use dependency injection instead.',
                 $targetName,
             );
-
         $errors[] = RuleErrorBuilder::message($message)
-            ->file($file)
+            ->file($file, $description)
             ->line($line)
             ->identifier('modify.global')
             ->build();
