@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.7
+
+- Detect global mutations in traits and closures using source-aware scope facts (#135)
+- Detect class constants accessed through typed objects and class strings (#132)
+- Detect global mutations through by-reference calls on typed receivers (#127)
+- Classify `constant()` calls with statically known names (#126)
+- Share constant access and call resolution across rules (#123, #128, #134)
+
 ## 0.6.6
 
 - Resolve `$GLOBALS` keys through constant-string types instead of reporting `$GLOBALS['unknown']` (#116)
