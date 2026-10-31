@@ -145,6 +145,29 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
         );
     }
 
+    public function testIssue75ImpureFunctions(): void
+    {
+        $names = [
+            'idate', 'srand', 'mt_srand', 'lcg_value', 'openssl_random_pseudo_bytes',
+            'get_cfg_var', 'get_browser', 'zend_version', 'ini_restore', 'set_time_limit',
+            'error_clear_last', 'clearstatcache', 'assert_options', 'set_error_handler',
+            'set_exception_handler', 'openlog', 'closelog', 'getlastmod', 'get_meta_tags',
+            'md5_file', 'sha1_file', 'hash_file', 'getimagesize', 'readgzfile',
+            'session_cache_expire', 'session_cache_limiter', 'session_module_name',
+            'session_save_path', 'session_set_save_handler', 'realpath_cache_get',
+            'realpath_cache_size',
+        ];
+        $expected = [];
+        foreach ($names as $index => $name) {
+            $expected[] = [
+                sprintf('Code is calling the impure function "%s()". This creates a hidden dependency on external state; pass the result as an argument instead.', $name),
+                $index + 7,
+            ];
+        }
+
+        $this->analyse([__DIR__ . '/Data/issue-75-impure-functions.php'], $expected);
+    }
+
     public function testIssue68EnvironmentAndFilesystemFunctions(): void
     {
         $this->analyse(
