@@ -168,6 +168,25 @@ class ForbidImpureGlobalFunctionsRuleTest extends RuleTestCase
         $this->analyse([__DIR__ . '/Data/issue-75-impure-functions.php'], $expected);
     }
 
+    public function testIssue75NamespacedShadowAndCaseInsensitiveGlobalCalls(): void
+    {
+        require_once __DIR__ . '/Data/issue-75-resolution.php';
+
+        $this->analyse(
+            [__DIR__ . '/Data/issue-75-resolution.php'],
+            [
+                [
+                    'Code is calling the impure function "idate()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    15,
+                ],
+                [
+                    'Code is calling the impure function "IDATE()". This creates a hidden dependency on external state; pass the result as an argument instead.',
+                    16,
+                ],
+            ],
+        );
+    }
+
     public function testIssue68EnvironmentAndFilesystemFunctions(): void
     {
         $this->analyse(
