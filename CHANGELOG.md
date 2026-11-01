@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.8
+
+- Detect 31 more impure PHP functions in the opinionated ruleset (#138)
+
 ## 0.6.7
 
 - Detect global mutations in traits and closures using source-aware scope facts (#135)
