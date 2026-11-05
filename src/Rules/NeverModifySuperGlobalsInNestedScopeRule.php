@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AccessingGlobals\Rules;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\Variable;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\RuleErrorBuilder;
 
@@ -32,21 +31,8 @@ class NeverModifySuperGlobalsInNestedScopeRule extends
         }
 
         $errors = [];
-        foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
-            $var = $target;
-
-            while (
-                $var instanceof Node\Expr\ArrayDimFetch
-                || $var instanceof Node\Expr\PropertyFetch
-            ) {
-                $var = $var->var;
-            }
-
-            if (!$var instanceof Variable) {
-                continue;
-            }
-
-            $name = GlobalVariableNameResolver::resolve($var, $scope);
+        foreach ($this->mutationTargetResolver->resolveTargets($node, $scope) as $target) {
+            $name = $target->rootName;
             if ($name === null) {
                 continue;
             }

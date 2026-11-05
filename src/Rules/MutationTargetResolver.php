@@ -93,6 +93,38 @@ final class MutationTargetResolver
         return $resolvedTargets;
     }
 
+    /** @return list<ResolvedMutationTarget> */
+    public function resolveTargets(Node $node, Scope $scope): array
+    {
+        return array_map(
+            static fn (Node\Expr $target): ResolvedMutationTarget => self::describeTarget($target, $scope),
+            $this->resolve($node, $scope),
+        );
+    }
+
+    public static function describeTarget(Node\Expr $expression, Scope $scope): ResolvedMutationTarget
+    {
+        $root = $expression;
+        $outermostFetch = null;
+        $innermostFetch = null;
+        $throughObjectHandle = false;
+        while ($root instanceof Node\Expr\ArrayDimFetch || $root instanceof Node\Expr\PropertyFetch) {
+            $outermostFetch ??= $root;
+            $innermostFetch = $root;
+            $throughObjectHandle = $throughObjectHandle || $root instanceof Node\Expr\PropertyFetch;
+            $root = $root->var;
+        }
+
+        return new ResolvedMutationTarget(
+            $expression,
+            $root,
+            $root instanceof Node\Expr\Variable ? GlobalVariableNameResolver::resolve($root, $scope) : null,
+            $innermostFetch,
+            $outermostFetch,
+            $throughObjectHandle,
+        );
+    }
+
     /**
      * @param list<Node\Expr> $resolvedTargets
      */
