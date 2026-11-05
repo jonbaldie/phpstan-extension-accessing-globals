@@ -68,14 +68,7 @@ final class NeverModifyGloballyDeclaredVariablesCollector implements Collector
                         if (!$item->byRef) {
                             continue;
                         }
-                        $referenced = $item->value;
-                        while ($referenced instanceof Node\Expr\ArrayDimFetch || $referenced instanceof Node\Expr\PropertyFetch) {
-                            $referenced = $referenced->var;
-                        }
-                        if (!$referenced instanceof Node\Expr\Variable) {
-                            continue;
-                        }
-                        $referencedName = GlobalVariableNameResolver::resolve($referenced, $scope);
+                        $referencedName = MutationTargetResolver::describeTarget($item->value, $scope)->rootName;
                         if ($referencedName !== null) {
                             $slots[$slotKey] = $referencedName;
                         }
@@ -85,29 +78,21 @@ final class NeverModifyGloballyDeclaredVariablesCollector implements Collector
             }
         }
 
-        foreach ($this->mutationTargetResolver->resolve($node, $scope) as $target) {
-            if ($node instanceof Node\Stmt\Unset_ && $target instanceof Node\Expr\Variable) {
+        foreach ($this->mutationTargetResolver->resolveTargets($node, $scope) as $target) {
+            if ($node instanceof Node\Stmt\Unset_ && $target->expression instanceof Node\Expr\Variable) {
                 continue;
             }
-            $globalTarget = $target;
-            $throughObjectHandle = false;
-            $outermostFetch = null;
-            while ($globalTarget instanceof Node\Expr\ArrayDimFetch || $globalTarget instanceof Node\Expr\PropertyFetch) {
-                $outermostFetch ??= $globalTarget;
-                $throughObjectHandle = $throughObjectHandle || $globalTarget instanceof Node\Expr\PropertyFetch;
-                $globalTarget = $globalTarget->var;
-            }
-            if (!$globalTarget instanceof Node\Expr\Variable) {
+            if (!$target->root instanceof Node\Expr\Variable) {
                 continue;
             }
             $outermostSlotKeys = [];
-            if ($outermostFetch instanceof Node\Expr\ArrayDimFetch && $outermostFetch->dim !== null) {
-                $outermostSlotKeys = self::constantSlotKeys($outermostFetch->dim, $scope);
+            if ($target->outermostFetch instanceof Node\Expr\ArrayDimFetch && $target->outermostFetch->dim !== null) {
+                $outermostSlotKeys = self::constantSlotKeys($target->outermostFetch->dim, $scope);
             }
             $facts[] = [
                 'kind' => 'mutation',
-                'targetName' => GlobalVariableNameResolver::resolve($globalTarget, $scope),
-                'throughObjectHandle' => $throughObjectHandle,
+                'targetName' => $target->rootName,
+                'throughObjectHandle' => $target->throughObjectHandle,
                 'outermostSlotKeys' => $outermostSlotKeys,
             ];
         }
