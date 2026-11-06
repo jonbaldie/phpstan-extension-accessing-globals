@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.9
+
+- Share mutation target details across global and superglobal rules without changing diagnostics (#140)
+
 ## 0.6.8
 
 - Detect 31 more impure PHP functions in the opinionated ruleset (#138)
