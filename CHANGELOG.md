@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.9
+
+- Centralize mutation target resolution across global and superglobal rules (#140)
+
 ## 0.6.8
 
 - Detect 31 more impure PHP functions in the opinionated ruleset (#138)
