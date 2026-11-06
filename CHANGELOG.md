@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## 0.6.9
 
-- Centralize mutation target resolution across global and superglobal rules (#140)
+- Share mutation target details across global and superglobal rules without changing diagnostics (#140)
 
 ## 0.6.8
 
