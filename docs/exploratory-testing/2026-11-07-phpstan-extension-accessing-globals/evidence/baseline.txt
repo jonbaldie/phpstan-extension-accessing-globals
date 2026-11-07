@@ -1,0 +1,53 @@
+COMMAND: vendor/bin/phpstan analyze -c .run-tmp/baseline-config.neon --generate-baseline=.run-tmp/phpstan-baseline.neon docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php --level=0 --no-progress
+File '/home/ubuntu/Code/pstack/jonbaldie/globals-explore-20261107/.run-tmp/../../config/rules.neon' is missing or is not readable.
+EXIT: 1
+Corrected configuration (.run-tmp/baseline-config.neon):
+includes:
+    - ../config/rules.neon
+parameters:
+    tmpDir: phpstan-baseline-cache
+COMMAND: vendor/bin/phpstan analyze -c .run-tmp/baseline-config.neon --generate-baseline=.run-tmp/phpstan-baseline.neon docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php --level=0 --no-progress
+
+ [OK] Baseline generated with 5 errors.
+
+GENERATE EXIT: 0
+Generated baseline:
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Code is accessing global variable \$counter\. Use dependency injection instead\.$#'
+			identifier: access.global
+			count: 1
+			path: ../docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php
+
+		-
+			message: '#^Code is accessing superglobal variable \$_GET in a nested scope\. Pass the value as an argument instead\.$#'
+			identifier: access.superglobal.nested
+			count: 1
+			path: ../docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php
+
+		-
+			message: '#^Code is accessing superglobal variable \$_SESSION in a nested scope\. Pass the value as an argument instead\.$#'
+			identifier: access.superglobal.nested
+			count: 1
+			path: ../docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php
+
+		-
+			message: '#^Code is modifying superglobal variable \$_SESSION in a nested scope\. Return the new value instead\.$#'
+			identifier: modify.superglobal.nested
+			count: 1
+			path: ../docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php
+
+		-
+			message: '#^Code is modifying variable \$counter that was declared with the "global" keyword\. Use dependency injection instead\.$#'
+			identifier: modify.global
+			count: 1
+			path: ../docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php
+Replay configuration (.run-tmp/baseline-config.neon):
+includes:
+    - ../config/rules.neon
+    - phpstan-baseline.neon
+parameters:
+    tmpDir: phpstan-baseline-cache
+COMMAND: vendor/bin/phpstan analyze -c .run-tmp/baseline-config.neon docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/entry.php --level=0 --no-progress --error-format=raw
+ANALYZE EXIT: 0

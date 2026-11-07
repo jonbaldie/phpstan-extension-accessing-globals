@@ -1,0 +1,21 @@
+COMMAND: vendor/bin/phpstan analyze -c config/rules-opinionated.neon docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/variations.php --level=0 --no-progress --error-format=raw
+Instructions for interpreting errors
+---------
+
+Each error has an associated identifier, like `argument.type`
+or `return.missing`.
+
+Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>
+This page contains code example, explanation why is this an error
+and instruction how to fix it.
+Before fixing the error, fetch the documentation page for its identifier.
+
+The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away.
+Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error.
+Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type.
+Do not add type casts just to silence errors.
+Do not widen parameter or return types just to make the error go away.
+/home/ubuntu/Code/pstack/jonbaldie/globals-explore-20261107/docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/variations.php:11:Code is calling the impure function "time()". This creates a hidden dependency on external state; pass the result as an argument instead. [identifier=function.impure]
+/home/ubuntu/Code/pstack/jonbaldie/globals-explore-20261107/docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/variations.php:13:Code is accessing global constant "APP_MODE". Pass it as an argument instead to make the dependency explicit. [identifier=constant.global]
+/home/ubuntu/Code/pstack/jonbaldie/globals-explore-20261107/docs/exploratory-testing/2026-11-07-phpstan-extension-accessing-globals/evidence/variations.php:15:Code is accessing constant Limit::MAX. This creates a hidden dependency; pass the value as an argument instead. [identifier=constant.class]
+EXIT: 1
