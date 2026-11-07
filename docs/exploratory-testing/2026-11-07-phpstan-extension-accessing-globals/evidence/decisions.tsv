@@ -1,0 +1,6 @@
+ts	phase	decision	why	evidence	result
+2026-11-07T01:34:04Z	setup	Installed from the lockfile in a new worktree	Keep dependencies and scratch data isolated	install.txt	PHPUnit passed 166 tests
+2026-11-07T01:34:04Z	default	Exercised the default rules and baseline	Check root scope, nested scope, and persisted baseline entries	rules.txt; baseline.txt	Expected findings and baseline replay passed
+2026-11-07T01:34:04Z	driver	Corrected a relative config include	The initial baseline command pointed outside the worktree	baseline.txt	Corrected replay passed
+2026-11-07T01:34:04Z	strict	Compared strict and default diagnostics	Check root-scope behavior with the same input	rules-strict.txt; explicit.txt	Expected findings and clean variation passed
+2026-11-07T01:34:05Z	opinionated	Exercised direct and indirect dependencies	Check prior fixes and ordinary usage	opinionated.txt; variation-rules-opinionated.txt	Expected findings observed; no new issue
