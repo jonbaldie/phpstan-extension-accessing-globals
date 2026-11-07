@@ -14,7 +14,7 @@ The goal was to allow entry-point superglobals while detecting hidden state insi
 
 The explicit-argument [variation](evidence/explicit.php) produced no findings and exited 0 under all three rule sets. See [explicit.txt](evidence/explicit.txt).
 
-For the lasting effect, PHPStan generated a baseline with five entries and then exited 0 when the configuration included that baseline. The [baseline log](evidence/baseline.txt) includes the generated file content. The first attempt used the wrong relative include path and failed before analysis. The log retains that driver error and the corrected run. The generated baseline was scratch data and was removed with the worktree.
+For the lasting effect, PHPStan generated a baseline with five entries and then exited 0 when the configuration included that baseline. The [baseline log](evidence/baseline.txt) includes the generated file content. The first attempt used the wrong relative include path and failed before analysis. The log retains that driver error and the corrected run. The generated baseline is scratch data, not a tracked file.
 
 ## Strict rules at root and nested scope
 
@@ -28,8 +28,8 @@ The [indirect variation](evidence/variations.php) calls `time` and `constant` th
 
 ## Findings and limits
 
-No product bugs were confirmed and no new issues were filed. The baseline configuration error was a test-driver problem, not a product failure. There are no unresolved candidates from these journeys.
+The [decision log](evidence/decisions.tsv) records the main choices and was written after the runs. No product bugs were confirmed and no new issues were filed. The baseline configuration error was a test-driver problem, not a product failure. There are no unresolved candidates from these journeys.
 
-The strict rules report both access and mutation for a superglobal write. The README notes that one operation may trigger multiple rules; the result was not treated as a bug. The existing report [#124](https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/124) records a prior decision on duplicate `$GLOBALS` mutation diagnostics, a different case.
+Both the strict rules and the default nested-scope rules report access and mutation for a superglobal write. The README notes that one operation may trigger multiple rules, so this result was not treated as a bug. The related issue [#124](https://github.com/jonbaldie/phpstan-extension-accessing-globals/issues/124) discusses duplicate `$GLOBALS` mutation diagnostics, a different case.
 
-This pass did not install the extension into a separate consumer project, test PHP 8.3 or 8.4, or exercise every mutation form. The [previous exploratory pass](../2026-10-24-phpstan-extension-accessing-globals/README.md) covers a consumer installation. The CI workflow covers PHP 8.3 and 8.4 separately. No product code was changed.
+This pass did not install the extension into a separate consumer project, test PHP 8.3 or 8.4, or exercise every mutation form. It did not generate baselines for the strict or opinionated rules, or rerun the documented fixture totals. The [previous exploratory pass](../2026-10-24-phpstan-extension-accessing-globals/README.md) covers a consumer installation. The CI workflow covers PHP 8.3 and 8.4 separately. No product code was changed.

@@ -4,3 +4,5 @@ ts	phase	decision	why	evidence	result
 2026-11-07T01:34:04Z	driver	Corrected a relative config include	The initial baseline command pointed outside the worktree	baseline.txt	Corrected replay passed
 2026-11-07T01:34:04Z	strict	Compared strict and default diagnostics	Check root-scope behavior with the same input	rules-strict.txt; explicit.txt	Expected findings and clean variation passed
 2026-11-07T01:34:05Z	opinionated	Exercised direct and indirect dependencies	Check prior fixes and ordinary usage	opinionated.txt; variation-rules-opinionated.txt	Expected findings observed; no new issue
+2026-11-07T01:36:25Z	review	Corrected the baseline replay instructions and issue summary	Independent review found inaccurate or incomplete documentation	baseline.txt; README.md	Review notes addressed
+2026-11-07T01:36:25Z	correction	Use the test output as evidence for the PHPUnit result	The setup row points to the install output instead	phpunit.txt	166 tests and 479 assertions passed
