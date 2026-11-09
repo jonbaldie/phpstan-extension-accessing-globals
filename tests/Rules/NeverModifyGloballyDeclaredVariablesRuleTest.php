@@ -111,6 +111,17 @@ class NeverModifyGloballyDeclaredVariablesRuleTest extends RuleTestCase
         }
     }
 
+    public function testIssue137SeparateAndDuplicateDeclarations(): void
+    {
+        $this->analyse(
+            [__DIR__ . '/Data/issue-137-global-bindings.php'],
+            [
+                ['Code is modifying variable $g0 that was declared with the "global" keyword. Use dependency injection instead.', 21],
+                ['Code is modifying variable $state that was declared with the "global" keyword. Use dependency injection instead.', 28],
+            ],
+        );
+    }
+
     public function testRule(): void
     {
         $this->analyse(

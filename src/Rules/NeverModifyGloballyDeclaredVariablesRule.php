@@ -16,7 +16,7 @@ use PHPStan\Rules\RuleErrorBuilder;
  * @phpstan-import-type Fact from GlobalBindingFact
  * @phpstan-import-type Event from GlobalBindingFact
  * @phpstan-import-type FunctionScope from GlobalBindingFact
- * @phpstan-type Frame array{funcId: string, aliased: list<string|null>, byValue: list<string|null>, aliases: array<string, array<int|string, string|null>>}
+ * @phpstan-type Frame array{funcId: string, aliased: array<string, true>, byValue: array<string, true>, aliases: array<string, array<int|string, string|null>>}
  * @implements Rule<CollectedDataNode>
  */
 class NeverModifyGloballyDeclaredVariablesRule implements Rule
@@ -62,7 +62,9 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             } else {
                 $events[] = $fact;
                 if ($fact['kind'] === 'global') {
-                    $globals[$fact['scopeId']] = array_merge($globals[$fact['scopeId']] ?? [], $fact['names']);
+                    foreach ($fact['names'] as $name) {
+                        $globals[$fact['scopeId']][self::bindingKey($name)] = true;
+                    }
                 }
             }
         }
@@ -85,7 +87,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
     /**
      * @param list<Event> $rootFacts
      * @param array<string, FunctionScope> $tree
-     * @param array<string, list<string|null>> $globals
+     * @param array<string, array<string, true>> $globals
      * @param array<\PHPStan\Rules\RuleError> $errors
      */
     private function evaluateFunctionTree(
@@ -124,7 +126,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 if (!in_array($funcIdInChain, $onStackIds, true)) {
                     $parentFrame = $bindingStack[array_key_last($bindingStack)];
                     $newFrame = $this->bindingsForNested($tree[$funcIdInChain], $parentFrame);
-                    $newFrame['aliased'] = array_merge($newFrame['aliased'], $globals[$funcIdInChain] ?? []);
+                    $newFrame['aliased'] += $globals[$funcIdInChain] ?? [];
                     $bindingStack[] = $newFrame;
                 }
             }
@@ -134,7 +136,7 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                 $lhs = $fact['lhs'];
                 unset($bindingStack[$frameKey]['aliases'][$lhs]);
                 foreach ($fact['slots'] as $slotKey => $referenced) {
-                    if (in_array($referenced, $bindingStack[$frameKey]['aliased'], true)) {
+                    if (isset($bindingStack[$frameKey]['aliased'][self::bindingKey($referenced)])) {
                         $bindingStack[$frameKey]['aliases'][$lhs][$slotKey] = $referenced;
                     }
                 }
@@ -154,12 +156,8 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
                         continue;
                     }
                 }
-                $candidates = $fact['throughObjectHandle']
-                    ? array_merge($bindings['aliased'], $bindings['byValue'])
-                    : $bindings['aliased'];
-                $matchesKnownBinding = $targetName !== null && in_array($targetName, $candidates, true);
-                $matchesDynamicBinding = $targetName === null && in_array(null, $candidates, true);
-                if ($matchesKnownBinding || $matchesDynamicBinding) {
+                $key = self::bindingKey($targetName);
+                if (isset($bindings['aliased'][$key]) || ($fact['throughObjectHandle'] && isset($bindings['byValue'][$key]))) {
                     $this->reportMutation($targetName, $fact['file'], $fact['description'], $fact['line'], $errors);
                 }
             }
@@ -177,23 +175,24 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
         $byValue = [];
         $aliases = [];
         if ($funcInfo['type'] === 'arrow') {
-            $byValue = array_merge($enclosing['aliased'], $enclosing['byValue']);
+            $byValue = $enclosing['aliased'] + $enclosing['byValue'];
             $aliases = $enclosing['aliases'];
         } elseif ($funcInfo['type'] === 'closure') {
             foreach ($funcInfo['uses'] as $use) {
                 $name = $use['name'];
-                if ($use['byRef'] && in_array($name, $enclosing['aliased'], true)) {
-                    $aliased[] = $name;
+                $key = self::bindingKey($name);
+                if ($use['byRef'] && isset($enclosing['aliased'][$key])) {
+                    $aliased[$key] = true;
                 } elseif (array_key_exists($name, $enclosing['aliases'])) {
                     $aliases[$name] = $enclosing['aliases'][$name];
-                } elseif (in_array($name, $enclosing['aliased'], true) || in_array($name, $enclosing['byValue'], true)) {
-                    $byValue[] = $name;
+                } elseif (isset($enclosing['aliased'][$key]) || isset($enclosing['byValue'][$key])) {
+                    $byValue[$key] = true;
                 }
             }
         }
         foreach ($funcInfo['params'] as $paramName) {
-            $aliased = array_values(array_diff($aliased, [$paramName]));
-            $byValue = array_values(array_diff($byValue, [$paramName]));
+            $key = self::bindingKey($paramName);
+            unset($aliased[$key], $byValue[$key]);
             unset($aliases[$paramName]);
         }
         return [
@@ -202,6 +201,11 @@ class NeverModifyGloballyDeclaredVariablesRule implements Rule
             'byValue' => $byValue,
             'aliases' => $aliases,
         ];
+    }
+
+    private static function bindingKey(?string $name): string
+    {
+        return $name === null ? '' : '$' . $name;
     }
 
     /** @param array<\PHPStan\Rules\RuleError> $errors */
