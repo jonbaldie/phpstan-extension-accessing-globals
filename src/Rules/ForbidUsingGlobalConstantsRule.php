@@ -38,7 +38,7 @@ class ForbidUsingGlobalConstantsRule implements Rule
         // We only care about code inside a function or method.
         // Closures and arrow functions defined at file scope have no enclosing
         // function, but their bodies are nested scopes, not root code.
-        if (ScopeClassifier::isRootScope($scope)) {
+        if (ScopeClassifier::isOutsideFunctionScope($scope)) {
             return [];
         }
 

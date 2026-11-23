@@ -33,7 +33,7 @@ class ForbidUsingClassConstantsRule implements Rule
     public function processNode(Node $node, Scope $scope): array
     {
         // Root-scope closures and arrow functions are nested scopes too.
-        if (ScopeClassifier::isRootScope($scope)) {
+        if (ScopeClassifier::isOutsideFunctionScope($scope)) {
             return [];
         }
 
