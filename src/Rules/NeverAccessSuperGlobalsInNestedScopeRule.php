@@ -24,7 +24,7 @@ class NeverAccessSuperGlobalsInNestedScopeRule extends
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        if ($this->isInRootScope($scope)) {
+        if (ScopeClassifier::isRootScope($scope)) {
             return [];
         }
 

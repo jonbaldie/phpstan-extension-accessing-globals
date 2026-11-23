@@ -94,7 +94,7 @@ final class GlobalBindingScope
      */
     private static function describeScope(Scope $scope, array $ancestors): array
     {
-        if ($scope->isInAnonymousFunction() && $ancestors !== []) {
+        if (ScopeClassifier::isAnonymousScope($scope) && $ancestors !== []) {
             $anonymous = array_pop($ancestors);
             // Arrow scopes retain the enclosing scope's parentScope, rather
             // than linking to the enclosing scope itself. Their structural
